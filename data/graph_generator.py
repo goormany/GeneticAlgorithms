@@ -29,6 +29,9 @@ class GraphGenerator:
         
         for u in range(1, num_vertices + 1):
             for v in range(1, num_vertices + 1):
+                if u == v:
+                    continue
+                
                 if random.uniform(0, 1) < edge_probability:
                     graph.add_edge(u, v, random.randint(min_weight, max_weight))
         return graph
