@@ -136,7 +136,6 @@ class Graph:
             adj[v].append(u)
         
         visited = [False] * (n+1)
-        parent = [0] * (n + 1)
         
         def has_cycle(v: int, p: int):
             visited[v] = True
