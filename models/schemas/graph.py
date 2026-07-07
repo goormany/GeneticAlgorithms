@@ -36,4 +36,4 @@ class GraphData(BaseModel):
         return cls(num_vercites=n, edges=[EdgeData(edge) for edge in edges])
     
     def to_edges_list(self) -> list[tuple[int, int, float]]:
-        return [edge.to_tuple() for edge in self.edges]
+        return [(edge.u, edge.v, edge.w) for edge in self.edges]

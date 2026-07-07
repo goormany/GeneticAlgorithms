@@ -60,7 +60,7 @@ class Graph:
         if self.has_edge(a, b):
             raise ValueError("Не допускаются кратные ребра")
         
-        new_edge = EdgeData(a, b, w)
+        new_edge = EdgeData(u=a, v=b, w=w)
         self._data.edges.append(new_edge)
         
         self._matrix = None
