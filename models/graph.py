@@ -112,9 +112,45 @@ class Graph:
     def get_total_weight(self) -> float:
         return sum(w for _, _, w in self.edges)
     
+    def get_edges_weight(self, edges: list[tuple[int, int]]) -> int:
+        weight = 0
+        for e in edges:
+            weight += self.get_edge_weight(*e)
+        return weight
+    
     def to_dict(self) -> dict[str, Any]:
         return self._data.model_dump()
     
     def to_json(self, filepath: str, indent: int = 4) -> None:
         with open(filepath, "w", encoding="utf8") as f:
             json.dump(self.to_dict(), f, indent=indent)
+    
+    @staticmethod
+    def is_tree(n: int, edges: list[tuple[int, int]]) -> bool:
+        if len(edges) != n - 1:
+            return False
+        
+        adj = [[] for _ in range(n+1)]
+        for u, v in edges:
+            adj[u].append(v)
+            adj[v].append(u)
+        
+        visited = [False] * (n+1)
+        
+        def has_cycle(v: int, p: int):
+            visited[v] = True
+           
+            for to in adj[v]:
+                if to == p:
+                    continue
+                if visited[to]:
+                    return True
+                if has_cycle(to, v):
+                    return True
+            return False
+        
+        if has_cycle(1, 0):
+            return False
+        
+        return all(visited[1:])
+        
