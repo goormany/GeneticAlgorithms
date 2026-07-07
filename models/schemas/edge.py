@@ -5,7 +5,7 @@ class EdgeData(BaseModel):
     v: int = Field(gt=0)
     w: float = Field(description="weight", ge=0)
     
-    @model_validator("after")
+    @model_validator(mode="after")
     def validate_edge(self):
         if self.u == self.v:
             raise ValueError("Петли запрещены")

@@ -6,7 +6,7 @@ class GraphData(BaseModel):
     num_vercites: int = Field(gt=0, description="Кол-во вершин")
     edges: list[EdgeData] = []
     
-    @model_validator("after")
+    @model_validator(mode="after")
     def validate_vertices_exists(self):
         if not self.edges:
             return self
@@ -19,7 +19,7 @@ class GraphData(BaseModel):
             raise ValueError("Вершина вне диапозона")
         return self
     
-    @model_validator("after")
+    @model_validator(mode="after")
     def validate_no_duplicates(self):
         viewed = set()
         for edge in self.edges:
