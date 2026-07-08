@@ -94,10 +94,15 @@ class Graph:
     def get_total_weight(self) -> float:
         return sum(self.get_matrix()[u][v] for u in range(self.num_vertices) for v in range(self.num_vertices))
     
-    def get_edges_weight(self, edges: list[tuple[int, int]]) -> int:
+    def get_edges_weight(self, edges: list[tuple[int, int]]) -> float:
         weight = 0
         for e in edges:
-            weight += self.get_edge_weight(*e)
+            edge_weight = self.get_edge_weight(*e)
+            
+            if edge_weight == 0:
+                return float("inf")
+            
+            weight += edge_weight
         return weight
     
     def to_dict(self) -> dict[str, Any]:
