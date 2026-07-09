@@ -63,6 +63,11 @@ class GeneticAlgorithmMST:
         self.avg_fitness_history: List[float] = []
         self.worst_fitness_history: List[float] = []
 
+        max_edge_weight = max((w for _, _, w in self.graph.get_edges()))
+        self.max_possible_tree_weight = max_edge_weight * (self.graph.num_vertices - 1)
+
+        self.default_patience = max(30, min(150, int(self.population_size * 0.3)))
+
         self._initialize_population()
 
     def _initialize_population(self):
@@ -75,17 +80,29 @@ class GeneticAlgorithmMST:
         self._save_state()
 
     def _calculate_fitness(self, individual: List[int]) -> float:
-        """Вычисление fitness особи (вес дерева)"""
+        """
+        Двухуровневый fitness:
+        1. Сначала проверяем валидность
+        2. Потом считаем вес
+        """
         edges = PruferCode.code_to_edges(self.graph.num_vertices, individual)
 
-        weight = self.graph.get_edges_weight(edges)
+        invalid_edges_count = 0
+        total_weight = 0.0
 
-        # Штраф для невалидных деревьев
-        if weight == float('inf'):
-            max_edge_weight = max((w for _, _, w in self.graph.get_edges()), default=100.0)
-            weight = max_edge_weight * self.graph.num_vertices * 10
+        for u, v in edges:
+            weight = self.graph.get_edge_weight(u, v)
+            if weight == 0:
+                invalid_edges_count += 1
+            else:
+                total_weight += weight
 
-        return weight
+        if invalid_edges_count > 0:
+            # Штраф: огромное число + количество ошибок
+            penalty = self.max_possible_tree_weight * 2 + invalid_edges_count * 1000
+            return penalty + total_weight
+
+        return total_weight
 
     def _evaluate_population(self) -> List[Tuple[List[int], float]]:
         evaluated = []
@@ -187,17 +204,21 @@ class GeneticAlgorithmMST:
             'best_edges': best_edges
         }
 
-    def has_converged(self, patience: int = 20, min_improvement: float = 0.001) -> bool:
+    def has_converged(self, patience: int = None, min_improvement: float = 0.001) -> bool:
         """
         Проверить сошёлся ли алгоритм
 
         Args:
-            patience: сколько поколений без улучшения
+            patience: сколько поколений без улучшения (None = автоматический выбор)
             min_improvement: минимальное относительное улучшение
 
         Returns:
             True если алгоритм сошёлся
         """
+        # Если patience не указан, используем адаптивное значение
+        if patience is None:
+            patience = self.default_patience
+
         if self.generation < patience:
             return False
 
