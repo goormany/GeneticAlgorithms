@@ -125,7 +125,7 @@ class Graph:
         
         while stack:
             v = stack.pop()
-            for neighbor, _ in self.get_neighbors(v + 1):
+            for neighbor, _ in self.get_copy_neighbors(v + 1):
                 idx = neighbor - 1
                 if not visited[idx]:
                     visited[idx] = True
