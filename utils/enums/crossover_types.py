@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
-class CrossoverType(Enum, str):
+class CrossoverType(StrEnum):
     UNIFORM = "Равномерное"
     ONE_POINT = "Рулетная"
     TWO_POINT = "Рулетная"

@@ -1,5 +1,5 @@
-from enum import Enum
+from enum import StrEnum
 
-class SelectionType(Enum, str):
+class SelectionType(StrEnum):
     TOURNAMENT = "Турнирная"
     ROULETTE = "Рулетная"
