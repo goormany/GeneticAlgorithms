@@ -3,7 +3,9 @@ from typing import List, Tuple, Dict, Optional
 from models.graph import Graph
 from models.prufer import PruferCode
 from core.operators import GeneticOperators
-
+from utils.enums.crossover_types import CrossoverType
+from utils.enums.mutation_types import MutationType
+from utils.enums.selection_types import SelectionType
 
 class GeneticAlgorithmMST:
     def __init__(self, graph: Graph,
@@ -11,9 +13,9 @@ class GeneticAlgorithmMST:
                  mutation_rate: float = 0.1,
                  crossover_rate: float = 0.8,
                  elitism_count: int = 2,
-                 selection_type: str = "tournament",
-                 crossover_type: str = "uniform",
-                 mutation_type: str = "swap",
+                 selection_type: str = SelectionType.TOURNAMENT.value,
+                 crossover_type: str = CrossoverType.UNIFORM.value,
+                 mutation_type: str = MutationType.SWAP.value,
                  tournament_size: int = 3):
         """
         Args:
@@ -89,30 +91,30 @@ class GeneticAlgorithmMST:
         return evaluated
 
     def _select_parent(self, evaluated_population: List[Tuple[List[int], float]]) -> List[int]:
-        if self.selection_type == "tournament":
+        if self.selection_type == SelectionType.TOURNAMENT.value:
             return self.operators.tournament_selection(
                 evaluated_population,
                 self.tournament_size
             )
-        elif self.selection_type == "roulette":
+        elif self.selection_type == SelectionType.ROULETTE.value:
             return self.operators.roulette_selection(evaluated_population)
         else:
             raise ValueError(f"Неизвестный тип селекции: {self.selection_type}")
 
     def _crossover(self, parent1: List[int], parent2: List[int]) -> Tuple[List[int], List[int]]:
-        if self.crossover_type == "uniform":
+        if self.crossover_type == CrossoverType.UNIFORM.value:
             return self.operators.uniform_crossover(parent1, parent2)
-        elif self.crossover_type == "one_point":
+        elif self.crossover_type == CrossoverType.ONE_POINT.value:
             return self.operators.one_point_crossover(parent1, parent2)
-        elif self.crossover_type == "two_point":
+        elif self.crossover_type == CrossoverType.TWO_POINT.value:
             return self.operators.two_point_crossover(parent1, parent2)
         else:
             raise ValueError(f"Неизвестный тип скрещивания: {self.crossover_type}")
 
     def _mutate(self, individual: List[int]) -> List[int]:
-        if self.mutation_type == "swap":
+        if self.mutation_type == MutationType.SWAP.value:
             return self.operators.swap_mutation(individual)
-        elif self.mutation_type == "random_reset":
+        elif self.mutation_type == MutationType.RANDOM_RESET.value:
             return self.operators.random_reset_mutation(individual)
         else:
             raise ValueError(f"Неизвестный тип мутации: {self.mutation_type}")
