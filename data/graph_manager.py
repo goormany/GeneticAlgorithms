@@ -60,62 +60,47 @@ class GraphManager:
         return self._graph
     
     # методы графа
-    @require_graph
     def get_edges(self) -> list[tuple[int, int, float]]:
         return self._graph.get_edges()
     
-    @require_graph
     def get_matrix(self) -> list[list[float]]:
         return self._graph.get_matrix()
     
-    @require_graph
     def get_data(self) -> GraphData:
         return self._graph.get_data()
     
-    @require_graph
     def add_edge(self, u: int, v: int, w: float):
         return self._graph.add_edge(u, v, w)
     
-    @require_graph
     def find_edge(self, u: int, v: int) -> tuple[int, int, float] | None:
         return self._graph.find_edge(u, v)
     
-    @require_graph
     def has_edge(self, u: int, v: int) -> bool:
         return self._graph.has_edge(u, v)
     
-    @require_graph
     def get_edge_weight(self, u: int, v: int) -> float:
         return self._graph.get_edge_weight(u, v)
     
-    @require_graph
     def get_copy_edges(self) -> list[tuple[int, int, float]]:
         return self._graph.get_copy_edges()
     
-    @require_graph
     def get_copy_neighbors(self, vertex: int) -> list[tuple[int, float]]:
         return self._graph.get_copy_neighbors(vertex)
     
-    @require_graph
     def get_degree(self, vertex: int) -> int:
         return self._graph.get_degree(vertex)
     
-    @require_graph
     def get_total_edges(self) -> int:
         return self._graph.get_total_edges()
     
-    @require_graph
     def get_total_weight(self) -> float:
         return self._graph.get_total_weight()
     
-    @require_graph
     def get_edges_weight(self, edges: list[tuple[int, int]]) -> float:
         return self._graph.get_edges_weight(edges)
     
-    @require_graph
     def graph_to_dict(self) -> dict[str, Any]:
         return self._graph.to_dict()
     
-    @require_graph
     def to_json(self, filepath: str, indent: int = 4) -> None:
         self._graph.to_json(filepath, indent)
