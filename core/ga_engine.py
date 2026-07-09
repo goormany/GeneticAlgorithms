@@ -113,7 +113,7 @@ class GeneticAlgorithmMST:
 
     def _mutate(self, individual: List[int]) -> List[int]:
         if self.mutation_type == MutationType.SWAP.value:
-            return self.operators.swap_mutation(individual)
+            return self.operators.mutate_swap(individual)
         elif self.mutation_type == MutationType.RANDOM_RESET.value:
             return self.operators.random_reset_mutation(individual)
         else:
