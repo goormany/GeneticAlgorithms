@@ -32,7 +32,7 @@ class GeneticAlgorithmMST:
         """
         self.graph = graph
 
-        if not Graph.is_connected:
+        if not graph.is_connected():
             raise ValueError("Граф не связный! МОД не существует.")
 
         self.population_size = population_size
