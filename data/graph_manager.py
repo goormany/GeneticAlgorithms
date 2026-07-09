@@ -45,7 +45,7 @@ class GraphManager:
         graph = Graph(num_vertices)
         
         for u, v, w in edges:
-            self._graph.add_edge(u, v, w)
+            graph.add_edge(u, v, w)
         self.set_graph(graph)
         
         return self._graph
