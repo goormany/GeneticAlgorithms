@@ -17,7 +17,7 @@ class GAStateStep(BaseModel):
 
 
 class GAHistory(BaseModel):
-    generations_count: int = Field(0, description="Кол-во поколоений", default=0, ge=0)
+    generations_count: int = Field(description="Кол-во поколоений", default=0, ge=0)
     best_fitness_history: list[float] = Field(description="История лучшего фитнеса",
                                               default_factory=list)
     avg_fitness_history: list[float] = Field(description="История среднего фитнеса",
