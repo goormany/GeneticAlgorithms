@@ -30,8 +30,10 @@ class Graph:
         
         for u in range(1, self.num_vertices + 1):
             for v in range(1, self.num_vertices + 1):
-                self._adj_list[u-1].append((v, self.get_matrix()[u-1][v-1]))
-                self._adj_list[v-1].append((u, self.get_matrix()[v-1][u-1]))
+                weight = self.get_matrix()[u-1][v-1]
+                if weight > 0:
+                    self._adj_list[u-1].append((v, weight))
+                    self._adj_list[v-1].append((u, weight))
 
     def _validate_vertex(self, vertex: int) -> None:
         if not (1 <= vertex <= self.num_vertices):
