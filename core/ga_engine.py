@@ -7,6 +7,7 @@ from utils.enums.crossover_types import CrossoverType
 from utils.enums.mutation_types import MutationType
 from utils.enums.selection_types import SelectionType
 
+
 class GeneticAlgorithmMST:
     def __init__(self, graph: Graph,
                  population_size: int = 100,
@@ -30,6 +31,10 @@ class GeneticAlgorithmMST:
             tournament_size: размер турнира для турнирной селекции
         """
         self.graph = graph
+
+        if not Graph.is_connected:
+            raise ValueError("Граф не связный! МОД не существует.")
+
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
@@ -182,10 +187,41 @@ class GeneticAlgorithmMST:
             'best_edges': best_edges
         }
 
+    def has_converged(self, patience: int = 20, min_improvement: float = 0.001) -> bool:
+        """
+        Проверить сошёлся ли алгоритм
+
+        Args:
+            patience: сколько поколений без улучшения
+            min_improvement: минимальное относительное улучшение
+
+        Returns:
+            True если алгоритм сошёлся
+        """
+        if self.generation < patience:
+            return False
+
+        recent = self.best_fitness_history[-patience:]
+
+        best_recent = min(recent)
+        worst_recent = max(recent)
+
+        if best_recent == worst_recent:
+            return True
+
+        improvement = (worst_recent - best_recent) / worst_recent
+        return improvement < min_improvement
+
     def run(self, max_generations: int) -> Dict:
-        """Запустить алгоритм на заданное количество поколений"""
-        for _ in range(max_generations):
+        """
+        Запустить алгоритм на заданное количество поколений
+        """
+        for i in range(max_generations):
             stats = self.step()
+
+            if self.has_converged():
+                print(f"Сходимость достигнута на поколении {i + 1}")
+                break
 
         return stats
 
