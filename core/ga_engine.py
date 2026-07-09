@@ -2,7 +2,7 @@ import random
 from typing import List, Tuple, Dict, Optional
 from models.graph import Graph
 from models.prufer import PruferCode
-from .genetic_operators import GeneticOperators
+from cort.genetic_operators import GeneticOperators
 
 
 class GeneticAlgorithmMST:
