@@ -7,6 +7,7 @@ class GAStateStep(BaseModel):
     best_fitness: float = Field(description="Лучший фитнесс")
     avg_fitness: float = Field(description="Средний фитнесс")
     worst_fitness: float = Field(description="Худший фитнесс")
+    best_edges: list[tuple[int, int]] = Field(description="Лучие ребра из популяции", default_factory=list)
     
     def to_dict(self) -> dict:
         return self.model_dump()
@@ -16,36 +17,27 @@ class GAStateStep(BaseModel):
 
 
 class GAHistory(BaseModel):
-    generations_count: int = Field(description="Кол-во поколоений", default=0, ge=0)
+    generations_count: int = Field(0, description="Кол-во поколоений", default=0, ge=0)
     best_fitness_history: list[float] = Field(description="История лучшего фитнеса",
                                               default_factory=list)
     avg_fitness_history: list[float] = Field(description="История среднего фитнеса",
                                               default_factory=list)
-    wrost_fitness_history: list[float] = Field(description="История худшего фитнеса",
+    worst_fitness_history: list[float] = Field(description="История худшего фитнеса",
                                               default_factory=list)
-    populations: list[list[list[int]]] = Field(
-        default_factory=list,
-        description="История популяций (список поколений, каждое со списком хромосом)"
-    )
+    steps: list[GAStateStep] = Field(description="Шаги алгоритма (состояний)", default_factory=list)
     
     def add_step(self, step: GAStateStep):
         self.generations_count += 1
-        self.best_fitness_history.append(step)
-        self.avg_fitness_history.append(step)
-        self.wrost_fitness_history.append(step)
-        self.populations.append(step.population.copy())
+        self.best_fitness_history.append(step.best_fitness)
+        self.avg_fitness_history.append(step.avg_fitness)
+        self.worst_fitness_history.append(step.worst_fitness)
+        self.steps.append(step)
     
     def get_step(self, index: int) -> GAStateStep | None:
         if not (0 <= index < self.generations_count):
             return None
         
-        return GAStateStep(
-            generation=index,
-            population=self.populations[index].copy() if self.populations else [],
-            best_fitness=self.best_fitness_history[index],
-            avg_fitness=self.avg_fitness_history[index],
-            worst_fitness=self.worst_fitness_history[index]
-        )
+        return self.steps[index]
     
     def get_last_step(self) -> GAStateStep | None:
         if self.generations_count == 0:
@@ -58,3 +50,6 @@ class GAHistory(BaseModel):
 
     def to_dict(self) -> dict:
         return self.model_dump()
+    
+    def __len__(self) -> int:
+        return self.generations_count
