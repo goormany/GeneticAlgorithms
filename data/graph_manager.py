@@ -34,7 +34,7 @@ class GraphManager:
             raise ValueError("Не найден файл")
         
         try:
-            graph = self._file_io(filepath)
+            graph = self._file_io.load(filepath)
         except Exception as e:
             raise ValueError(f"Ошибка загрузки графа: {e}")
         
