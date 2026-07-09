@@ -7,7 +7,6 @@ from models.schemas.graph import GraphData
 from models.schemas.ga_state import GAHistory, GAStateStep
 from data.file_io import FileIO
 from data.graph_generator import GraphGenerator
-from utils.decorators.required_graph import require_graph
 
 
 class GraphManager:
@@ -61,46 +60,81 @@ class GraphManager:
     
     # методы графа
     def get_edges(self) -> list[tuple[int, int, float]]:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_edges()
     
     def get_matrix(self) -> list[list[float]]:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_matrix()
     
     def get_data(self) -> GraphData:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_data()
     
     def add_edge(self, u: int, v: int, w: float):
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.add_edge(u, v, w)
     
     def find_edge(self, u: int, v: int) -> tuple[int, int, float] | None:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.find_edge(u, v)
     
     def has_edge(self, u: int, v: int) -> bool:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.has_edge(u, v)
     
     def get_edge_weight(self, u: int, v: int) -> float:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_edge_weight(u, v)
     
     def get_copy_edges(self) -> list[tuple[int, int, float]]:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_copy_edges()
     
     def get_copy_neighbors(self, vertex: int) -> list[tuple[int, float]]:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_copy_neighbors(vertex)
     
     def get_degree(self, vertex: int) -> int:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_degree(vertex)
     
     def get_total_edges(self) -> int:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_total_edges()
     
     def get_total_weight(self) -> float:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_total_weight()
     
     def get_edges_weight(self, edges: list[tuple[int, int]]) -> float:
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.get_edges_weight(edges)
     
     def graph_to_dict(self) -> dict[str, Any]:
+        if self._graph is None:
+            return ValueError("Не существует графа")
+        if self._graph is None:
+            return ValueError("Не существует графа")
         return self._graph.to_dict()
+    
+    def graph_is_connected(self) -> bool:
+        if self._graph is None:
+            return ValueError("Не существует графа")
+        return self._graph.is_connected()
     
     def to_json(self, filepath: str, indent: int = 4) -> None:
         self._graph.to_json(filepath, indent)
