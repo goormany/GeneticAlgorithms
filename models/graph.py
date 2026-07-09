@@ -112,6 +112,29 @@ class Graph:
         with open(filepath, "w", encoding="utf8") as f:
             json.dump(self.to_dict(), f, indent=indent)
     
+    def is_connected(self) -> bool:
+        if self.num_vertices == 0:
+            return False
+        if self.num_vertices == 1:
+            return True
+        
+        visited = [False] * self.num_vertices
+        stack = [0]  # 0-based индекс
+        visited[0] = True
+        visited_count = 1
+        
+        while stack:
+            v = stack.pop()
+            for neighbor, _ in self.get_neighbors(v + 1):
+                idx = neighbor - 1
+                if not visited[idx]:
+                    visited[idx] = True
+                    visited_count += 1
+                    stack.append(idx)
+        
+        return visited_count == self.num_vertices
+        
+    
     @staticmethod
     def is_tree(n: int, edges: list[tuple[int, int]]) -> bool:
         if len(edges) != n - 1:
