@@ -1,5 +1,5 @@
-from enum import Enum
+from enum import StrEnum
 
-class MutationType(Enum, str):
+class MutationType(StrEnum):
     SWAP = "Обмен генов"
     RANDOM_RESET = "Замена генов"
