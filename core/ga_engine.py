@@ -137,7 +137,7 @@ class GeneticAlgorithmMST:
         if self.mutation_type == MutationType.SWAP.value:
             return self.operators.mutate_swap(individual)
         elif self.mutation_type == MutationType.RANDOM_RESET.value:
-            return self.operators.random_reset_mutation(individual)
+            return self.operators.mutate(individual)
         else:
             raise ValueError(f"Неизвестный тип мутации: {self.mutation_type}")
 
