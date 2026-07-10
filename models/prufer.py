@@ -19,6 +19,7 @@ class PruferCode:
             for v in range(1, n + 1):
                 if degree[v] == 1:
                     leaf = v
+                    break
             
             neighbor = adjacency[leaf].pop()
             prufer.append(neighbor)

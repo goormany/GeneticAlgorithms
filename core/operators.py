@@ -28,28 +28,14 @@ class GeneticOperators:
                              tournament_size: int = 3) -> List[int]:
         """
         Турнирная селекция
-
-        Args:
-            population: популяция [(особь, fitness), ...]
-            tournament_size: размер турнира
-
-        Returns:
-            Выбранная особь
         """
         tournament = random.sample(population, min(tournament_size, len(population)))
-        # Выбираем особь с лучшим (минимальным) fitness
         winner = min(tournament, key=lambda x: x[1])
         return winner[0].copy()
 
     def roulette_selection(self, population: List[Tuple[List[int], float]]) -> List[int]:
         """
         Рулеточная селекция (с инверсией для минимизации)
-
-        Args:
-            population: популяция [(особь, fitness), ...]
-
-        Returns:
-            Выбранная особь
         """
         max_fitness = max(fit for _, fit in population)
 
@@ -72,7 +58,6 @@ class GeneticOperators:
     def uniform_crossover(self, parent1: List[int], parent2: List[int]) -> Tuple[List[int], List[int]]:
         """
         Равномерное скрещивание
-        Каждый ген выбирается случайно от одного из родителей
         """
         if random.random() > self.crossover_rate:
             # Скрещивание не происходит
@@ -133,8 +118,7 @@ class GeneticOperators:
 
     def mutate(self, individual: List[int]) -> List[int]:
         """
-        Мутация особи
-        С вероятностью mutation_rate заменяем случайный ген
+        Мутация особи: заменяем случайный ген
         """
         if len(individual) == 0:
             return individual.copy()

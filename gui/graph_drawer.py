@@ -47,9 +47,11 @@ class GraphDrawer:
             self.pos = nx.spring_layout(G, seed=42, k=k, iterations=100)
 
         # Рисуем ребра
+
         nx.draw_networkx_edges(G, self.pos, ax=self.ax, edge_color='lightgray', width=1.5)
 
         # Если передан список ребер МОД — выделяем их
+
         if mst_edges:
             mst_set = set(tuple(sorted(e[:2])) for e in mst_edges)
             current_mst_edges = [e for e in G.edges() if tuple(sorted(e)) in mst_set]
@@ -58,6 +60,7 @@ class GraphDrawer:
                 G, self.pos, ax=self.ax, 
                 edgelist=current_mst_edges, edge_color='crimson', width=3.5
             )
+
 
         # Рисуем вершины
         nx.draw_networkx_nodes(G, self.pos, ax=self.ax, node_color='#1f77b4', node_size=400)
