@@ -1,11 +1,14 @@
+from typing import Callable
+
 import tkinter as tk
+from tkinter import Tk
 from tkinter import ttk
 from gui.graph_drawer import GraphDrawer
 from core.ga_engine import GeneticAlgorithmMST
 from models.prufer import PruferCode
 
 class EvolutionWindow:
-    def __init__(self, parent, ga: GeneticAlgorithmMST):
+    def __init__(self, parent: Tk, ga: GeneticAlgorithmMST, max_count_generations: int, show_stats_func: Callable):
         """
         :param parent: Родительское окно (root или main_window)
         :param ga: Объект генетического алгоритма
@@ -17,6 +20,10 @@ class EvolutionWindow:
         self.ga = ga
         self.vertices_count = ga.graph.num_vertices
         self.all_edges = ga.graph.get_edges()
+
+        self.max_count_generations = max_count_generations
+
+        self.show_stat_func = show_stats_func
         
         self.current_step = 0
         self.is_playing = False
@@ -56,15 +63,11 @@ class EvolutionWindow:
             return
 
         best_solution = self.ga.get_best_solution()
+
+        self.show_stat_func(self.ga)
+
         current_mst = best_solution['edges']
 
-        print(f"\n[EvolutionWindow DEBUG]")
-        print(f"  Поколение: {self.ga.generation}")
-        print(f"  Код Прюфера: {best_solution['prufer_code']}")
-        print(f"  Длина кода: {len(best_solution['prufer_code'])}")
-        print(f"  Рёбер в МОД: {len(current_mst)}")
-        print(f"  Рёбра: {current_mst}")
-        print(f"  Вес: {best_solution['weight']}")
         
         self.info_label.config(
             text=f"Поколение: {self.ga.generation} | Ребер в МОД: {len(current_mst)} | Вес: {best_solution['weight']:.2f}"
@@ -83,11 +86,8 @@ class EvolutionWindow:
 
     def next_step(self):
         """Выполнить одно поколение эволюции"""
-        stats = self.ga.step()
+        self.ga.step()
         self.update_plot()
-        
-        if self.is_playing and self.ga.has_converged():
-            self.toggle_play()  
 
     def prev_step(self):
         """Откатить одно поколение назад"""
@@ -98,19 +98,21 @@ class EvolutionWindow:
     def skip_to_end(self):
         """Запустить алгоритм до сходимости или указанного числа поколений"""
         self.is_playing = False
+
+        if self.ga.generation >= self.max_count_generations:
+            return  # Уже достигли максимального числа поколений
         
-        # Запустить ещё 50 поколений или до сходимости
-        self.ga.run(max_generations=50)
+        self.ga.run(max_generations=self.max_count_generations - self.ga.generation)
         self.update_plot()
 
     def toggle_play(self):
         """ Запуск автопроигрывания эволюции поколений """
         if self.is_playing:
             self.is_playing = False
-            self.btn_play.config(text="▶ Запустить")
+            self.btn_play.config(text="Запустить")
         else:
             self.is_playing = True
-            self.btn_play.config(text="⏸ Пауза")
+            self.btn_play.config(text="Пауза")
             self.play_loop()
 
     def play_loop(self):

@@ -5,6 +5,8 @@ from tkinter.scrolledtext import ScrolledText
 from gui.graph_drawer import GraphDrawer
 from data.graph_manager import GraphManager
 from core.ga_engine import GeneticAlgorithmMST
+from gui.evolution_window import EvolutionWindow
+
 from utils.enums.crossover_types import CrossoverType
 from utils.enums.mutation_types import MutationType
 from utils.enums.selection_types import SelectionType
@@ -24,9 +26,9 @@ class GA_GUI:
         left_panel = ttk.Frame(main_panel)
         left_panel.pack(side="left", fill="both", expand=True)
 
-        right_panel = ttk.Frame(main_panel, width=400)  # Фиксированная ширина для лога
+        right_panel = ttk.Frame(main_panel, width=400) 
         right_panel.pack(side="right", fill="both", expand=False)
-        right_panel.pack_propagate(False)  # Чтобы ширина не сжималась
+        right_panel.pack_propagate(False) 
 
         # Параметры
         frame = ttk.LabelFrame(left_panel, text="Параметры")
@@ -135,7 +137,6 @@ class GA_GUI:
                    text="Загрузить граф",
                    command=self.load_graph).pack(side="left", padx=5)
 
-        # --- НОВАЯ КНОПКА ДЛЯ РУЧНОГО ВВОДА ---
         ttk.Button(buttons,
                    text="Ввести вручную",
                    command=self.manual_input_graph).pack(side="left", padx=5)
@@ -179,19 +180,27 @@ class GA_GUI:
         self.log = ScrolledText(log_frame, height=10, width=50)
         self.log.pack(fill="both", expand=True)
 
-        self.ga = None  # Инициализация переменной для алгоритма
+        self.ga = None
+
 
     def load_in_ga(self):
+        # Проверка что граф загружен
+        if self.graph_manager.get_graph() is None:
+            messagebox.showerror("Ошибка", "Сначала загрузите или сгенерируйте граф!")
+            return False
         
-        self.ga = GeneticAlgorithmMST(self.graph_manager.get_graph(), 
-                                   population_size=int(self.population.get()),
-                                   crossover_rate=float(self.crossover.get()),
-                                   mutation_rate=float(self.mutation.get()),
-                                   selection_type=self.selection.get(),
-                                   tournament_size=int(self.tournament_size.get()),
-                                   crossover_type=self.crossover_method.get(),
-                                   mutation_type=self.mutation_method.get(),
-                                   elitism_count=int(self.elitism.get()))
+        self.ga = GeneticAlgorithmMST(
+            self.graph_manager.get_graph(),
+            population_size=int(self.population.get()),
+            crossover_rate=float(self.crossover.get()),
+            mutation_rate=float(self.mutation.get()),
+            selection_type=self.selection.get(),
+            tournament_size=int(self.tournament_size.get()),
+            crossover_type=self.crossover_method.get(),
+            mutation_type=self.mutation_method.get(),
+            elitism_count=int(self.elitism.get())
+        )
+        return True
 
 
     def update_selection(self, event=None):
@@ -259,7 +268,6 @@ class GA_GUI:
         ttk.Button(window, text="Сгенерировать", command=create).grid(row=4, column=0, pady=20)
         ttk.Button(window, text="Отмена", command=window.destroy).grid(row=4, column=1)
 
-    # --- НОВЫЙ МЕТОД ДЛЯ ДИАЛОГОВОГО ОКНА РУЧНОГО ВВОДА ---
     def manual_input_graph(self):
         window = tk.Toplevel(self.root)
         window.title("Ввод графа вручную")
@@ -278,7 +286,6 @@ class GA_GUI:
         txt_input = ScrolledText(window, height=12, width=50)
         txt_input.pack(padx=10, pady=5, fill="both", expand=True)
         
-        # Пример дефолтного заполнения, чтобы пользователю было понятнее
         txt_input.insert("1.0", "1 2 10\n1 3 15\n2 3 5\n3 4 20")
 
         def parse_and_save():
@@ -288,13 +295,12 @@ class GA_GUI:
                 return
             
             edges = []
-            detected_vertices = set()
             
             try:
                 for line_num, line in enumerate(text_content.split('\n'), 1):
                     line = line.strip()
                     if not line:
-                        continue  # Пропускаем пустые строки
+                        continue
                     
                     parts = line.split()
                     if len(parts) != 3:
@@ -302,11 +308,9 @@ class GA_GUI:
                     
                     u = int(parts[0])
                     v = int(parts[1])
-                    w = float(parts[2])  # Вес может быть дробным, судя по graph_drawer
+                    w = float(parts[2])
                     
                     edges.append((u, v, w))
-                    detected_vertices.add(u)
-                    detected_vertices.add(v)
             
             except ValueError as e:
                 messagebox.showerror("Ошибка парсинга", f"Некорректный формат данных!\n{str(e)}")
@@ -315,17 +319,15 @@ class GA_GUI:
             if not edges:
                 messagebox.showwarning("Предупреждение", "Не удалось распознать ни одного ребра.")
                 return
-
-            # Вычисляем количество вершин (предполагаем непрерывную нумерацию от 1 до max)
-            n = max(detected_vertices) if detected_vertices else 0
             
+            self.graph_manager.load_from_tuple(edges)
             
             # Отрисовываем граф на холсте
             self.drawer.clear()
-            self.drawer.draw(n, graph.get_edges())
+            self.drawer.draw(self.graph_manager.get_graph().num_vertices, self.graph_manager.get_edges())
             
             # Пишем в лог главного окна
-            self.log.insert("end", f"Граф введен вручную: вершин={n}, ребер={len(edges)}.\n")
+            self.log.insert("end", f"Граф введен вручную: вершин={self.graph_manager.get_graph().num_vertices}, ребер={len(edges)}.\n")
             self.log.see("end")
             
             window.destroy()
@@ -344,10 +346,16 @@ class GA_GUI:
         self.log.see("end")
 
         self.canvas.delete("all")
-        self.drawer.clear()  # Также очищаем matplotlib-отрисовку
+        self.drawer.clear()
         self.best_label.config(text="-")
         self.avg_label.config(text="-")
         self.worst_label.config(text="-")
+    
+    def show_stats(self, ga) -> None:
+        print(ga.get_statistics())
+        self.best_label.config(text=ga.get_statistics().get("best_fitness_history", "-")[-1])
+        self.avg_label.config(text=ga.get_statistics().get("avg_fitness_history", "-")[-1])
+        self.worst_label.config(text=ga.get_statistics().get("worst_fitness_history", "-")[-1])
 
     def run_algorithm(self):
             
@@ -355,10 +363,26 @@ class GA_GUI:
         self.log.insert("end", "Алгоритм запущен\n")
         self.log.see("end")
 
-        self.load_in_ga()  # Загружаем граф и параметры в алгоритм
+        try:
+            self.load_in_ga()
+            print(self.ga.run(1))
+        except ValueError as e:
+            messagebox.showerror("Ошибка", str(e))
+            self.log.insert("end", f"Ошибка: {e}\n")
 
-        print(self.ga.run(int(self.generations.get())))
+        
+        num_vertices = self.graph_manager.get_graph().num_vertices
+        all_edges = self.graph_manager.get_edges()
 
-        self.best_label.config(text="Расчет...")
-        self.avg_label.config(text="Расчет...")
-        self.worst_label.config(text="Расчет...")
+        if hasattr(self.ga, 'history') and self.ga.history:
+            history_mst_edges = self.ga.history 
+        else:
+            final_edges = [(u, v) for u, v, w in all_edges[:num_vertices-1]] 
+            history_mst_edges = [final_edges] * 5
+
+        EvolutionWindow(
+            parent=self.root,
+            ga=self.ga,
+            max_count_generations=int(self.generations.get()),
+            show_stats_func=self.show_stats
+        )
