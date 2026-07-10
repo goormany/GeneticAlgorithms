@@ -240,9 +240,9 @@ class GeneticAlgorithmMST:
         for i in range(max_generations):
             stats = self.step()
 
-            if self.has_converged():
-                print(f"Сходимость достигнута на поколении {i + 1}")
-                break
+            # if self.has_converged():
+            #     print(f"Сходимость достигнута на поколении {i + 1}")
+            #     break
 
         return stats
 
