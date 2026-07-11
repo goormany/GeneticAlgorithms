@@ -139,7 +139,7 @@ class Graph:
         
     
     @staticmethod
-    def is_tree(n: int, edges: list[tuple[int, int]]) -> bool:
+    def is_tree(n: int, edges: list[tuple[int, int]], graph: "Graph | None" = None) -> bool:
         if len(edges) != n - 1:
             return False
         
@@ -147,6 +147,9 @@ class Graph:
         for u, v in edges:
             adj[u].append(v)
             adj[v].append(u)
+            
+            if graph is not None and graph.find_edge(u, v) is None:
+                return False
         
         visited = [False] * (n+1)
         
