@@ -11,6 +11,7 @@ from gui.dialogs.manual_input_dialog import ManualInputDialog
 
 from data.graph_manager import GraphManager
 from core.ga_engine import GeneticAlgorithmMST
+from models.graph import Graph
 
 
 class GA_GUI:
@@ -183,19 +184,8 @@ class GA_GUI:
         """Проверка валидности решения"""
         # Проверяем, что количество ребер равно n-1
         num_vertices = self.graph_manager.get_graph().num_vertices
-        if len(solution['edges']) != num_vertices - 1:
-            return False
         
-        # Проверяем, что все ребра существуют в графе
-        existing_edges = set()
-        for u, v, w in self.all_edges:
-            existing_edges.add((min(u, v), max(u, v)))
-        
-        for u, v in solution['edges']:
-            if (min(u, v), max(u, v)) not in existing_edges:
-                return False
-        
-        return True
+        return Graph.is_tree(num_vertices, solution['edges'], self.ga.graph)
     
     def update_plot(self):
         if not self.ga or self.ga.generation == 0:
