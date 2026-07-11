@@ -43,10 +43,19 @@ class GA_GUI:
         right_panel.pack(side="right", fill="both", expand=False)
         right_panel.pack_propagate(False)
         
-        # Параметры
+        # Верхняя часть - лог
+        log_frame = ttk.LabelFrame(right_panel, text="Лог")
+        log_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        self.log = ScrolledText(log_frame, height=15, width=60)
+        self.log.pack(fill="both", expand=True)
+        
+        # Нижняя часть - статистика с графиком
+        self.stats = StatisticsFrame(right_panel)
+        
+        # Левая панель
         self.params = ParameterFrame(left_panel)
         
-        # Кнопки управления
         self.controls = ControlButtons(
             left_panel,
             on_generate=self._show_generate_dialog,
@@ -60,10 +69,6 @@ class GA_GUI:
             on_skip=self.skip_to_end
         )
         
-        # Статистика
-        self.stats = StatisticsFrame(left_panel)
-        
-        # Граф
         graph_frame = ttk.LabelFrame(left_panel, text="Граф и МОД")
         graph_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
@@ -71,13 +76,6 @@ class GA_GUI:
         self.canvas.pack(fill="both", expand=True)
         
         self.drawer = GraphDrawer(self.canvas)
-        
-        # Лог
-        log_frame = ttk.LabelFrame(right_panel, text="Лог")
-        log_frame.pack(fill="both", expand=True, padx=10, pady=5)
-        
-        self.log = ScrolledText(log_frame, height=20, width=60)
-        self.log.pack(fill="both", expand=True)
     
     def _show_generate_dialog(self):
         GenerateGraphDialog(self.root, self._on_generate_graph)
@@ -133,6 +131,10 @@ class GA_GUI:
         self.all_edges = self.graph_manager.get_edges()
         self.current_step = 0
         self.best_mst_weight = float("inf")
+        
+        # Сбрасываем график при загрузке нового графа
+        self.stats.reset()
+        
         return True
     
     def reset(self):
@@ -144,7 +146,7 @@ class GA_GUI:
         self.log.see("end")
         
         self.drawer.clear()
-        self.stats.reset()
+        self.stats.reset()  # Сбрасываем статистику и график
         self.controls.enable_controls(False)
         self.controls.set_play_button_text(False)
         
@@ -162,12 +164,38 @@ class GA_GUI:
             best_solution = self.ga.get_best_solution()
             if best_solution:
                 mst_weight = best_solution['weight']
-                self.stats.update_weight(mst_weight)
+                generation = stats.get('generation', 0)
                 
-                if mst_weight < self.best_mst_weight:
+                # Проверяем, валидно ли решение
+                # Считаем валидным, если вес меньше определенного порога
+                # (например, если граф имеет N вершин, максимальный вес МОД не может быть больше (N-1) * max_weight)
+                is_valid = self._is_valid_solution(best_solution)
+                
+                # Обновляем вес и график только для валидных решений
+                self.stats.update_weight(mst_weight, generation, is_valid)
+                
+                if is_valid and mst_weight < self.best_mst_weight:
                     self.best_mst_weight = mst_weight
-                    self.log.insert("end", f"Найдено новое решение: Вес: {mst_weight}, поколение: {stats['generation']}\n")
+                    self.log.insert("end", f"Найдено новое решение: Вес: {mst_weight}, поколение: {generation}\n")
                     self.log.see("end")
+
+    def _is_valid_solution(self, solution):
+        """Проверка валидности решения"""
+        # Проверяем, что количество ребер равно n-1
+        num_vertices = self.graph_manager.get_graph().num_vertices
+        if len(solution['edges']) != num_vertices - 1:
+            return False
+        
+        # Проверяем, что все ребра существуют в графе
+        existing_edges = set()
+        for u, v, w in self.all_edges:
+            existing_edges.add((min(u, v), max(u, v)))
+        
+        for u, v in solution['edges']:
+            if (min(u, v), max(u, v)) not in existing_edges:
+                return False
+        
+        return True
     
     def update_plot(self):
         if not self.ga or self.ga.generation == 0:
@@ -184,12 +212,22 @@ class GA_GUI:
         
         self.show_stats()
         
-        self.drawer.draw(
-            vertices_count=self.graph_manager.get_graph().num_vertices,
-            edges_list=self.all_edges,
-            mst_edges=current_mst,
-            reset_layout=False
-        )
+        # Проверяем валидность перед отрисовкой
+        if self._is_valid_solution(best_solution):
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=current_mst,
+                reset_layout=False
+            )
+        else:
+            # Если невалидно, рисуем только граф без МОД
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                reset_layout=False
+            )
         
         self.controls.enable_step_buttons(
             can_back=self.ga.generation > 1,
@@ -208,6 +246,10 @@ class GA_GUI:
             if not self.load_in_ga():
                 self.algorithm_running = False
                 return
+            
+            # Сбрасываем график перед запуском
+            self.stats.reset()
+            self.best_mst_weight = float("inf")
             
             self.controls.enable_controls(True)
             self.ga.run(1)
