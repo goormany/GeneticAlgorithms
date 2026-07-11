@@ -77,6 +77,18 @@ class GeneticAlgorithmMST:
             individual = self.operators.create_random_individual()
             self.population.append(individual)
 
+        # Оценить начальную популяцию для статистики поколения 0
+        evaluated = self._evaluate_population()
+        evaluated.sort(key=lambda x: x[1])
+
+        best_fitness = evaluated[0][1]
+        worst_fitness = evaluated[-1][1]
+        avg_fitness = sum(fit for _, fit in evaluated) / len(evaluated)
+
+        self.best_fitness_history.append(best_fitness)
+        self.avg_fitness_history.append(avg_fitness)
+        self.worst_fitness_history.append(worst_fitness)
+
         self._save_state()
 
     def _calculate_fitness(self, individual: List[int]) -> float:
@@ -154,17 +166,9 @@ class GeneticAlgorithmMST:
 
     def step(self) -> Dict:
         """Выполнить один шаг алгоритма (одно поколение)"""
+        # Оценить текущую популяцию для селекции
         evaluated_population = self._evaluate_population()
-
         evaluated_population.sort(key=lambda x: x[1])
-
-        best_fitness = evaluated_population[0][1]
-        worst_fitness = evaluated_population[-1][1]
-        avg_fitness = sum(fit for _, fit in evaluated_population) / len(evaluated_population)
-
-        self.best_fitness_history.append(best_fitness)
-        self.avg_fitness_history.append(avg_fitness)
-        self.worst_fitness_history.append(worst_fitness)
 
         new_population = []
 
@@ -186,17 +190,30 @@ class GeneticAlgorithmMST:
             if len(new_population) < self.population_size:
                 new_population.append(child2)
 
+        # Заменить популяцию на новую
         self.population = new_population
         self.generation += 1
 
+        # Оценить новую популяцию для статистики
+        evaluated_new = self._evaluate_population()
+        evaluated_new.sort(key=lambda x: x[1])
+
+        best_fitness = evaluated_new[0][1]
+        worst_fitness = evaluated_new[-1][1]
+        avg_fitness = sum(fit for _, fit in evaluated_new) / len(evaluated_new)
+
+        self.best_fitness_history.append(best_fitness)
+        self.avg_fitness_history.append(avg_fitness)
+        self.worst_fitness_history.append(worst_fitness)
+
         self._save_state()
 
-        # Вернуть статистику
-        best_individual = evaluated_population[0][0]
+        # Вернуть статистику новой популяции
+        best_individual = evaluated_new[0][0]
         best_edges = PruferCode.code_to_edges(self.graph.num_vertices, best_individual)
 
         return {
-            'generation': self.generation - 1,  # Номер завершённого поколения
+            'generation': self.generation,
             'best_fitness': best_fitness,
             'avg_fitness': avg_fitness,
             'worst_fitness': worst_fitness,
