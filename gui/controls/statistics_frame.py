@@ -153,6 +153,50 @@ class StatisticsFrame:
         
         self.fig.canvas.draw()
 
+    def bulk_update_weights(self, weight_data: list[tuple[int, float, bool]]):
+        """
+        Пакетное обновление графика
+        """
+        for gen, weight, is_valid in weight_data:
+            if weight is not None and is_valid:
+                if gen is not None:
+                    self.generations.append(gen)
+                    self.weights.append(weight)
+        
+        # Обновляем линию
+        self.best_line.set_data(self.generations, self.weights)
+        
+        # Находим точки с улучшением
+        current_best = float('inf')
+        best_points_x = []
+        best_points_y = []
+        
+        for i, w in enumerate(self.weights):
+            if w < current_best:
+                current_best = w
+                best_points_x.append(self.generations[i])
+                best_points_y.append(w)
+        
+        # Обновляем scatter
+        self.scatter.remove()
+        if best_points_x:
+            self.scatter = self.ax.scatter(best_points_x, best_points_y,
+                                        c='red', s=20, alpha=0.7, label='Найденные решения')
+        else:
+            self.scatter = self.ax.scatter([], [], c='red', s=20, alpha=0.7, label='Найденные решения')
+        
+        # Обновляем оси
+        if self.generations:
+            self.ax.set_xlim(0, max(self.generations) + 5)
+            min_weight = min(self.weights) - 5 if self.weights else 0
+            max_weight = max(self.weights) + 5 if self.weights else 100
+            self.ax.set_ylim(max(0, min_weight), max_weight)
+        else:
+            self.ax.set_xlim(0, 10)
+            self.ax.set_ylim(0, 100)
+        
+        self.fig.canvas.draw()
+    
     def reset(self):
         """Сброс статистики и графика"""
         self.generation_label.config(text="-")

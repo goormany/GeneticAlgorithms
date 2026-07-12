@@ -386,40 +386,41 @@ class GA_GUI:
         start_gen = self.ga.generation
         remaining = self.max_generations - start_gen
         
-        # Сохраняем текущую длину истории до запуска
+        # Сохраняем текущую длину истории fitness до запуска
         history_len_before = len(self.ga.best_fitness_history)
         
         self.ga.run(max_generations=remaining)
         
-        # Добавляем все промежуточные лучшие веса на график статистики
+        # Собираем данные для пакетного обновления графика
         max_possible = self.ga.max_possible_tree_weight
+        weight_data = []
         for gen_idx in range(history_len_before, len(self.ga.best_fitness_history)):
             weight = self.ga.best_fitness_history[gen_idx]
-            
             is_valid = weight < max_possible * 2
-            self.stats.update_weight(weight, gen_idx, is_valid)
+            if is_valid:
+                weight_data.append((gen_idx, weight, True))
+                
+                if weight < self.best_mst_weight:
+                    self.best_mst_weight = weight
+                    self.log.insert("end", f"Найдено новое решение: Вес: {weight:.2f}, поколение: {gen_idx}\n")
+                    self.log.see("end")
         
-        # Обновляем интерфейс: селектор особей, кнопки, граф — но без дублирования show_stats
-        self._populate_individual_selector()
+        if weight_data:
+            self.stats.bulk_update_weights(weight_data)
         
-        best_solution = self.ga.get_best_solution()
-        current_mst = best_solution['edges']
-        
-        # Обновляем текстовые метки статистики
         stats = self.ga.get_statistics()
         if stats:
             self.stats.update_stats(stats)
-            if best_solution:
-                mst_weight = best_solution['weight']
-                generation = stats.get('generation', 0)
-                is_valid = self._is_valid_solution(best_solution)
-                
-                if is_valid and mst_weight < self.best_mst_weight:
-                    self.best_mst_weight = mst_weight
-                    self.log.insert("end", f"Найдено новое решение: Вес: {mst_weight}, поколение: {generation}\n")
-                    self.log.see("end")
         
-        # Отрисовка графа
+        # Обновляем комбобокс особей
+        self._populate_individual_selector()
+        
+        # Отрисовка графа МОД
+        best_solution = self.ga.get_best_solution()
+        current_mst = best_solution['edges']
+        
+        self.stats.weight_label.config(text=f"{best_solution["weight"]:.2f}")
+        
         if self._is_valid_solution(best_solution):
             self.drawer.draw(
                 vertices_count=self.graph_manager.get_graph().num_vertices,
