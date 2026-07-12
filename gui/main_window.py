@@ -3,386 +3,472 @@ from tkinter import ttk, filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
 
 from gui.graph_drawer import GraphDrawer
+from gui.controls.control_buttons import ControlButtons
+from gui.controls.parameter_frame import ParameterFrame
+from gui.controls.statistics_frame import StatisticsFrame
+from gui.dialogs.generate_graph_dialog import GenerateGraphDialog
+from gui.dialogs.manual_input_dialog import ManualInputDialog
+
 from data.graph_manager import GraphManager
 from core.ga_engine import GeneticAlgorithmMST
-from gui.evolution_window import EvolutionWindow
+from models.graph import Graph
 
-from utils.enums.crossover_types import CrossoverType
-from utils.enums.mutation_types import MutationType
-from utils.enums.selection_types import SelectionType
 
 class GA_GUI:
-
+    
     def __init__(self, root):
-
         self.graph_manager = GraphManager()
         self.root = root
         self.root.title("Генетический алгоритм поиска МОД")
         self.algorithm_running = False
-
-        main_panel = ttk.Frame(root)
+        
+        # Атрибуты для пошагового управления
+        self.current_step = 0
+        self.is_playing = False
+        self.max_generations = 200
+        self.best_mst_weight = float("inf")
+        
+        self._create_layout()
+        
+        self.ga = None
+        self.all_edges = []
+    
+    def _create_layout(self):
+        main_panel = ttk.Frame(self.root)
         main_panel.pack(fill="both", expand=True)
-
+        
         left_panel = ttk.Frame(main_panel)
         left_panel.pack(side="left", fill="both", expand=True)
-
-        right_panel = ttk.Frame(main_panel, width=400) 
-        right_panel.pack(side="right", fill="both", expand=False)
-        right_panel.pack_propagate(False) 
-
-        # Параметры
-        frame = ttk.LabelFrame(left_panel, text="Параметры")
-        frame.pack(fill="x", padx=10, pady=5)
-
-        # Размер популяции
-        ttk.Label(frame, text="Размер популяции").grid(row=0, column=0, sticky="w", padx=5, pady=3)
-
-        self.population = ttk.Entry(frame, width=12)
-        self.population.insert(0, "100")
-        self.population.grid(row=0, column=1)
-
-        # Количество поколений
-        ttk.Label(frame, text="Количество поколений").grid(row=1, column=0, sticky="w", padx=5, pady=3)
-
-        self.generations = ttk.Entry(frame, width=12)
-        self.generations.insert(0, "200")
-        self.generations.grid(row=1, column=1)
-
-        # Вероятность скрещивания
-        ttk.Label(frame, text="Вероятность скрещивания").grid(row=2, column=0, sticky="w", padx=5, pady=3)
-
-        self.crossover = ttk.Entry(frame, width=12)
-        self.crossover.insert(0, "0.8")
-        self.crossover.grid(row=2, column=1)
-
-        # Вероятность мутации
-        ttk.Label(frame, text="Вероятность мутации").grid(row=3, column=0, sticky="w", padx=5, pady=3)
-
-        self.mutation = ttk.Entry(frame, width=12)
-        self.mutation.insert(0, "0.05")
-        self.mutation.grid(row=3, column=1)
-
-        # Метод селекции
-        ttk.Label(frame, text="Метод селекции").grid(row=4, column=0, sticky="w", padx=5, pady=3)
-
-        self.selection = ttk.Combobox(
-            frame,
-            values=[
-                SelectionType.TOURNAMENT.value,
-                SelectionType.ROULETTE.value
-            ],
-            state="readonly",
-            width=18
-        )
-        self.selection.current(0)
-        self.selection.grid(row=4, column=1)
-
-        # Размер турнира
-        ttk.Label(frame, text="Размер турнира").grid(row=5, column=0, sticky="w", padx=5, pady=3)
-
-        self.tournament_size = ttk.Entry(frame, width=12)
-        self.tournament_size.insert(0, "5")
-        self.tournament_size.grid(row=5, column=1)
-
-        self.selection.bind("<<ComboboxSelected>>", self.update_selection)
-        self.update_selection()
-
-        # Метод скрещивания
-        ttk.Label(frame, text="Метод скрещивания").grid(row=6, column=0, sticky="w", padx=5, pady=3)
-
-        self.crossover_method = ttk.Combobox(
-            frame,
-            values=[
-                CrossoverType.ONE_POINT.value,
-                CrossoverType.TWO_POINT.value,
-                CrossoverType.UNIFORM.value
-            ],
-            state="readonly",
-            width=18
-        )
-        self.crossover_method.current(0)
-        self.crossover_method.grid(row=6, column=1)
-
-        # Метод мутации
-        ttk.Label(frame, text="Метод мутации").grid(row=7, column=0, sticky="w", padx=5, pady=3)
-
-        self.mutation_method = ttk.Combobox(
-            frame,
-            values=[
-                MutationType.SWAP.value,
-                MutationType.RANDOM_RESET.value,
-            ],
-            state="readonly",
-            width=18
-        )
-        self.mutation_method.current(0)
-        self.mutation_method.grid(row=7, column=1)
-
-        # Элитизм
-        ttk.Label(frame, text="Элитизм").grid(row=8, column=0, sticky="w", padx=5, pady=3)
-
-        self.elitism = ttk.Entry(frame, width=12)
-        self.elitism.insert(0, "2")
-        self.elitism.grid(row=8, column=1)
-
-        # Кнопки
-        buttons = ttk.Frame(left_panel)
-        buttons.pack(fill="x", pady=5)
-
-        ttk.Button(buttons,
-                   text="Сгенерировать граф",
-                   command=self.generate_graph).pack(side="left", padx=5)
-
-        ttk.Button(buttons,
-                   text="Загрузить граф",
-                   command=self.load_graph).pack(side="left", padx=5)
-
-        ttk.Button(buttons,
-                   text="Ввести вручную",
-                   command=self.manual_input_graph).pack(side="left", padx=5)
-
-        ttk.Button(buttons,
-                   text="Запустить",
-                   command=self.run_algorithm).pack(side="left", padx=5)
-
-        ttk.Button(buttons,
-                   text="Сброс",
-                   command=self.reset).pack(side="left", padx=5)
-
-        # Статистика
-        info = ttk.LabelFrame(left_panel, text="Статистика")
-        info.pack(fill="x", padx=10, pady=5)
-
-        ttk.Label(info, text="Лучшее значение:").grid(row=0, column=0, sticky="w", padx=10, pady=2)
-        self.best_label = ttk.Label(info, text="-")
-        self.best_label.grid(row=0, column=1, sticky="w", padx=5)
-
-        ttk.Label(info, text="Среднее значение:").grid(row=1, column=0, sticky="w", padx=10, pady=2)
-        self.avg_label = ttk.Label(info, text="-")
-        self.avg_label.grid(row=1, column=1, sticky="w", padx=5)
-
-        ttk.Label(info, text="Худшее значение:").grid(row=2, column=0, sticky="w", padx=10, pady=2)
-        self.worst_label = ttk.Label(info, text="-")
-        self.worst_label.grid(row=2, column=1, sticky="w", padx=5)
-
-        # Поле под граф
-        graph_frame = ttk.LabelFrame(left_panel, text="Граф")
-        graph_frame.pack(fill="both", expand=True, padx=10, pady=5)
-
-        self.canvas = tk.Canvas(graph_frame, bg="white", height=250)
-        self.canvas.pack(fill="both", expand=True)
-
-        self.drawer = GraphDrawer(self.canvas)
         
+        right_panel = ttk.Frame(main_panel, width=500)
+        right_panel.pack(side="right", fill="both", expand=False)
+        right_panel.pack_propagate(False)
+        
+        # Верхняя часть - лог
         log_frame = ttk.LabelFrame(right_panel, text="Лог")
         log_frame.pack(fill="both", expand=True, padx=10, pady=5)
-
-        self.log = ScrolledText(log_frame, height=10, width=50)
-        self.log.pack(fill="both", expand=True)
-
-        self.ga = None
-
-
-    def load_in_ga(self):
-        # Проверка что граф загружен
-        if self.graph_manager.get_graph() is None:
-            messagebox.showerror("Ошибка", "Сначала загрузите или сгенерируйте граф!")
-            return False
         
-        self.ga = GeneticAlgorithmMST(
-            self.graph_manager.get_graph(),
-            population_size=int(self.population.get()),
-            crossover_rate=float(self.crossover.get()),
-            mutation_rate=float(self.mutation.get()),
-            selection_type=self.selection.get(),
-            tournament_size=int(self.tournament_size.get()),
-            crossover_type=self.crossover_method.get(),
-            mutation_type=self.mutation_method.get(),
-            elitism_count=int(self.elitism.get())
+        self.log = ScrolledText(log_frame, height=15, width=60)
+        self.log.pack(fill="both", expand=True)
+        
+        # Нижняя часть - статистика с графиком
+        self.stats = StatisticsFrame(right_panel)
+        
+        # Левая панель
+        self.params = ParameterFrame(left_panel)
+        
+        self.controls = ControlButtons(
+            left_panel,
+            on_generate=self._show_generate_dialog,
+            on_load=self.load_graph,
+            on_manual=self._show_manual_dialog,
+            on_run=self.run_algorithm,
+            on_reset=self.reset,
+            on_step_back=self.prev_step,
+            on_step_forward=self.next_step,
+            on_play=self.toggle_play,
+            on_skip=self.skip_to_end
         )
-        return True
-
-
-    def update_selection(self, event=None):
-        if self.selection.get() == SelectionType.TOURNAMENT.value:
-            self.tournament_size.configure(state="normal")
-        else:
-            self.tournament_size.configure(state="disabled")
-
+        
+        graph_frame = ttk.LabelFrame(left_panel, text="Граф и МОД")
+        graph_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Панель выбора особи из популяции
+        selector_frame = ttk.Frame(graph_frame)
+        selector_frame.pack(fill="x", padx=5, pady=(5, 0))
+        
+        ttk.Label(selector_frame, text="Особь:").pack(side="left", padx=(0, 5))
+        self.individual_var = tk.StringVar()
+        self.individual_combo = ttk.Combobox(
+            selector_frame,
+            textvariable=self.individual_var,
+            state="readonly",
+            width=40
+        )
+        self.individual_combo.pack(side="left", fill="x", expand=True)
+        self.individual_combo.bind("<<ComboboxSelected>>", self._on_individual_selected)
+        self.individual_info_label = ttk.Label(selector_frame, text="")
+        self.individual_info_label.pack(side="left", padx=5)
+        # Храним список решений для быстрого доступа по индексу из combobox
+        self.individual_solutions = []
+        
+        self.canvas = tk.Canvas(graph_frame, bg="white", height=500)
+        self.canvas.pack(fill="both", expand=True)
+        
+        self.drawer = GraphDrawer(self.canvas)
+    
+    def _show_generate_dialog(self):
+        GenerateGraphDialog(self.root, self._on_generate_graph)
+    
+    def _show_manual_dialog(self):
+        ManualInputDialog(self.root, self._on_manual_input)
+    
+    def _on_generate_graph(self, n, p, w_min, w_max):
+        self.graph_manager.generate_random_graph(n, p, w_min, w_max)
+        self._update_after_graph_load(f"Создание графа: вершин={n}, p={p}, вес=[{w_min}, {w_max}]")
+    
+    def _on_manual_input(self, edges):
+        self.graph_manager.load_from_tuple(edges)
+        num_vertices = self.graph_manager.get_graph().num_vertices
+        self._update_after_graph_load(f"Граф введен вручную: вершин={num_vertices}, ребер={len(edges)}")
+    
+    def _update_after_graph_load(self, message):
+        num_vertices = self.graph_manager.get_graph().num_vertices
+        self.drawer.clear()
+        self.drawer.draw(num_vertices, self.graph_manager.get_edges())
+        self.log.insert("end", f"{message}\n")
+        self.log.see("end")
+        self.all_edges = self.graph_manager.get_edges()
+        self.controls.enable_controls(False)
+    
     def load_graph(self):
         filename = filedialog.askopenfilename(
             filetypes=[("Текстовые файлы", "*.txt"), ("Все файлы", "*.*")]
         )
         if filename:
             self.graph_manager.load(filename)
-            num_vercites = self.graph_manager.get_graph().num_vertices
-
+            num_vertices = self.graph_manager.get_graph().num_vertices
             self.drawer.clear()
-            self.drawer.draw(num_vercites, self.graph_manager.get_edges())
-
-            self.log.insert("end", f"Загружен граф:\n{filename}\n")
+            self.drawer.draw(num_vertices, self.graph_manager.get_edges())
+            self.log.insert("end", f"Загружен граф: {filename}\n")
             self.log.see("end")
-
-    def generate_graph(self):
-        window = tk.Toplevel(self.root)
-        window.title("Генерация случайного графа")
-        window.geometry("350x230")
-        window.resizable(False, False)
-
-        ttk.Label(window, text="Количество вершин").grid(row=0, column=0, padx=10, pady=8, sticky="w")
-        vertices = ttk.Entry(window)
-        vertices.insert(0, "20")
-        vertices.grid(row=0, column=1)
-
-        ttk.Label(window, text="Вероятность появления ребра").grid(row=1, column=0, padx=10, pady=8, sticky="w")
-        probability = ttk.Entry(window)
-        probability.insert(0, "0.3")
-        probability.grid(row=1, column=1)
-
-        ttk.Label(window, text="Минимальный вес").grid(row=2, column=0, padx=10, pady=8, sticky="w")
-        min_weight = ttk.Entry(window)
-        min_weight.insert(0, "1")
-        min_weight.grid(row=2, column=1)
-
-        ttk.Label(window, text="Максимальный вес").grid(row=3, column=0, padx=10, pady=8, sticky="w")
-        max_weight = ttk.Entry(window)
-        max_weight.insert(0, "100")
-        max_weight.grid(row=3, column=1)
+            self.all_edges = self.graph_manager.get_edges()
+            self.controls.enable_controls(False)
+    
+    def load_in_ga(self):
+        if self.graph_manager.get_graph() is None:
+            messagebox.showerror("Ошибка", "Сначала загрузите или сгенерируйте граф!")
+            return False
         
-        def create():
-            n = int(vertices.get())
-            p = float(probability.get())
-            w_min = int(min_weight.get())
-            w_max = int(max_weight.get())
-            
-            self.graph_manager.generate_random_graph(n, p, w_min, w_max)
-            
-            self.drawer.draw(n, self.graph_manager.get_edges())
-            self.log.insert(
-                "end",
-                f"Создание графа: вершин={n}, p={p}, вес=[{w_min}, {w_max}]\n"
-            )
-            self.log.see("end")
-            window.destroy()
-
-        ttk.Button(window, text="Сгенерировать", command=create).grid(row=4, column=0, pady=20)
-        ttk.Button(window, text="Отмена", command=window.destroy).grid(row=4, column=1)
-
-    def manual_input_graph(self):
-        window = tk.Toplevel(self.root)
-        window.title("Ввод графа вручную")
-        window.geometry("450x400")
+        params = self.params.get_parameters()
+        self.max_generations = params.pop('generations')
         
-        # Инструкция для пользователя
-        instruction = (
-            "Введите ребра в формате: u v w\n"
-            "Где u и v — номера вершин (целые числа), w — вес.\n"
-            "Каждое ребро с новой строки. Пример:\n"
-            "1 2 5.5\n1 3 10\n2 3 3"
+        self.ga = GeneticAlgorithmMST(
+            self.graph_manager.get_graph(),
+            **params
         )
-        ttk.Label(window, text=instruction, justify="left", font=("Consolas", 9)).pack(padx=10, pady=5, fill="x")
         
-        # Текстовое поле для ввода списка ребер
-        txt_input = ScrolledText(window, height=12, width=50)
-        txt_input.pack(padx=10, pady=5, fill="both", expand=True)
+        self.all_edges = self.graph_manager.get_edges()
+        self.current_step = 0
+        self.best_mst_weight = float("inf")
         
-        txt_input.insert("1.0", "1 2 10\n1 3 15\n2 3 5\n3 4 20")
-
-        def parse_and_save():
-            text_content = txt_input.get("1.0", "end-1c").strip()
-            if not text_content:
-                messagebox.showwarning("Предупреждение", "Поле ввода пустое!")
-                return
-            
-            edges = []
-            
-            try:
-                for line_num, line in enumerate(text_content.split('\n'), 1):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    
-                    parts = line.split()
-                    if len(parts) != 3:
-                        raise ValueError(f"Строка {line_num}: должно быть ровно 3 значения (u, v, w). Получено: {len(parts)}")
-                    
-                    u = int(parts[0])
-                    v = int(parts[1])
-                    w = float(parts[2])
-                    
-                    edges.append((u, v, w))
-            
-            except ValueError as e:
-                messagebox.showerror("Ошибка парсинга", f"Некорректный формат данных!\n{str(e)}")
-                return
-
-            if not edges:
-                messagebox.showwarning("Предупреждение", "Не удалось распознать ни одного ребра.")
-                return
-            
-            self.graph_manager.load_from_tuple(edges)
-            
-            # Отрисовываем граф на холсте
-            self.drawer.clear()
-            self.drawer.draw(self.graph_manager.get_graph().num_vertices, self.graph_manager.get_edges())
-            
-            # Пишем в лог главного окна
-            self.log.insert("end", f"Граф введен вручную: вершин={self.graph_manager.get_graph().num_vertices}, ребер={len(edges)}.\n")
-            self.log.see("end")
-            
-            window.destroy()
-
-        # Панель кнопок внизу диалогового окна
-        btn_frame = ttk.Frame(window)
-        btn_frame.pack(fill="x", pady=10)
+        # Сбрасываем график при загрузке нового графа
+        self.stats.reset()
         
-        ttk.Button(btn_frame, text="Применить", command=parse_and_save).pack(side="left", padx=20)
-        ttk.Button(btn_frame, text="Отмена", command=window.destroy).pack(side="right", padx=20)
-
+        return True
+    
     def reset(self):
         self.algorithm_running = False
-
-        self.log.insert("end", "Алгоритм остановлен пользователем.\n")
+        self.is_playing = False
+        self.current_step = 0
+        
+        self.log.insert("end", "Сброс состояния.\n")
         self.log.see("end")
-
-        self.canvas.delete("all")
+        
         self.drawer.clear()
-        self.best_label.config(text="-")
-        self.avg_label.config(text="-")
-        self.worst_label.config(text="-")
+        self.stats.reset()  # Сбрасываем статистику и график
+        self.controls.enable_controls(False)
+        self.controls.set_play_button_text(False)
+        self._populate_individual_selector()
+        
+        if self.ga:
+            self.ga = None
     
-    def show_stats(self, ga) -> None:
-        print(ga.get_statistics())
-        self.best_label.config(text=ga.get_statistics().get("best_fitness_history", "-")[-1])
-        self.avg_label.config(text=ga.get_statistics().get("avg_fitness_history", "-")[-1])
-        self.worst_label.config(text=ga.get_statistics().get("worst_fitness_history", "-")[-1])
-
-    def run_algorithm(self):
-            
-        self.algorithm_running = True
-        self.log.insert("end", "Алгоритм запущен\n")
-        self.log.see("end")
-
+    def _populate_individual_selector(self):
+        """Заполняет комбобокс списком особей из текущей популяции"""
+        if not self.ga:
+            self.individual_combo.configure(values=[])
+            self.individual_combo.set("")
+            self.individual_info_label.configure(text="")
+            self.individual_solutions = []
+            return
+        
+        self.individual_solutions = self.ga.get_all_solutions()
+        
+        labels = []
+        for sol in self.individual_solutions:
+            weight_str = f"{sol['weight']:.2f}"
+            labels.append(f"#{sol['rank']} (вес: {weight_str}) | код: {'-'.join(map(str, sol['prufer_code']))}")
+        
+        self.individual_combo.configure(values=labels)
+        
+        # Сбросить выбор, если он вышел за пределы
+        if self.individual_var.get():
+            try:
+                idx = labels.index(self.individual_var.get())
+                self.individual_var.set(labels[idx])
+            except ValueError:
+                self.individual_var.set("")
+                self.individual_info_label.configure(text="")
+    
+    def _on_individual_selected(self, event=None):
+        """Обработчик выбора особи из комбобокса"""
+        selected_label = self.individual_var.get()
+        if not selected_label or not self.individual_solutions:
+            return
+        
         try:
-            self.load_in_ga()
-            print(self.ga.run(1))
-        except ValueError as e:
+            idx = self.individual_combo.cget("values").index(selected_label)
+            if 0 <= idx < len(self.individual_solutions):
+                sol = self.individual_solutions[idx]
+                self.individual_info_label.configure(
+                    text=f"вес: {sol['weight']:.2f}"
+                )
+                self._redraw_with_selected(sol['edges'])
+        except ValueError:
+            pass
+    
+    def _redraw_with_selected(self, selected_edges=None):
+        """Перерисовывает граф с учётом выбранной особи и лучшей МОД"""
+        if not self.ga or self.ga.generation == 0:
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                selected_edges=selected_edges,
+                reset_layout=False
+            )
+            return
+        
+        best_solution = self.ga.get_best_solution()
+        current_mst = best_solution['edges']
+        
+        self.show_stats()
+        
+        if self._is_valid_solution(best_solution):
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=current_mst,
+                selected_edges=selected_edges,
+                reset_layout=False
+            )
+        else:
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                selected_edges=selected_edges,
+                reset_layout=False
+            )
+    
+    def show_stats(self):
+        if not self.ga:
+            return
+        
+        stats = self.ga.get_statistics()
+        if stats:
+            self.stats.update_stats(stats)
+            
+            best_solution = self.ga.get_best_solution()
+            if best_solution:
+                mst_weight = best_solution['weight']
+                generation = stats.get('generation', 0)
+                
+                # Проверяем, валидно ли решение
+                # Считаем валидным, если вес меньше определенного порога
+                # (например, если граф имеет N вершин, максимальный вес МОД не может быть больше (N-1) * max_weight)
+                is_valid = self._is_valid_solution(best_solution)
+                
+                # Обновляем вес и график только для валидных решений
+                self.stats.update_weight(mst_weight, generation, is_valid)
+                
+                if is_valid and mst_weight < self.best_mst_weight:
+                    self.best_mst_weight = mst_weight
+                    self.log.insert("end", f"Найдено новое решение: Вес: {mst_weight}, поколение: {generation}\n")
+                    self.log.see("end")
+
+    def _is_valid_solution(self, solution):
+        """Проверка валидности решения"""
+        # Проверяем, что количество ребер равно n-1
+        num_vertices = self.graph_manager.get_graph().num_vertices
+        
+        return Graph.is_tree(num_vertices, solution['edges'], self.ga.graph)
+    
+    def update_plot(self):
+        # Обновляем список особей в селекторе
+        self._populate_individual_selector()
+        
+        if not self.ga or self.ga.generation == 0:
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                reset_layout=False
+            )
+            return
+        
+        best_solution = self.ga.get_best_solution()
+        current_mst = best_solution['edges']
+        
+        self.show_stats()
+        
+        # Проверяем валидность перед отрисовкой
+        if self._is_valid_solution(best_solution):
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=current_mst,
+                reset_layout=False
+            )
+        else:
+            # Если невалидно, рисуем только граф без МОД
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                reset_layout=False
+            )
+        
+        self.controls.enable_step_buttons(
+            can_back=self.ga.generation > 1,
+            can_skip=self.ga.generation < self.max_generations
+        )
+    
+    def run_algorithm(self):
+        if self.algorithm_running:
+            return
+        
+        self.algorithm_running = True
+        self.log.insert("end", "Запуск алгоритма...\n")
+        self.log.see("end")
+        
+        try:
+            if not self.load_in_ga():
+                self.algorithm_running = False
+                return
+            
+            # Сбрасываем график перед запуском
+            self.stats.reset()
+            self.best_mst_weight = float("inf")
+            
+            self.controls.enable_controls(True)
+            self.ga.run(1)
+            self.update_plot()
+            self.is_playing = False
+            
+        except Exception as e:
             messagebox.showerror("Ошибка", str(e))
             self.log.insert("end", f"Ошибка: {e}\n")
-
+        finally:
+            self.algorithm_running = False
+    
+    def next_step(self):
+        if not self.ga:
+            return
         
-        num_vertices = self.graph_manager.get_graph().num_vertices
-        all_edges = self.graph_manager.get_edges()
-
-        if hasattr(self.ga, 'history') and self.ga.history:
-            history_mst_edges = self.ga.history 
+        self.ga.step()
+        self.update_plot()
+        self.log.insert("end", f"Поколение {self.ga.generation} завершено\n")
+        self.log.see("end")
+    
+    def prev_step(self):
+        if not self.ga or self.ga.generation <= 1:
+            return
+        
+        old_generation = self.ga.generation
+        
+        self.ga.rollback(steps=1)
+        
+        self.stats.truncate(self.ga.generation - 1)
+        
+        self.update_plot()
+        self.log.insert("end", f"Откат с поколения {old_generation} к поколению {self.ga.generation}\n")
+        self.log.see("end")
+    
+    def skip_to_end(self):
+        if not self.ga or self.ga.generation >= self.max_generations:
+            return
+        
+        self.is_playing = False
+        self.controls.set_play_button_text(False)
+        
+        start_gen = self.ga.generation
+        remaining = self.max_generations - start_gen
+        
+        # Сохраняем текущую длину истории fitness до запуска
+        history_len_before = len(self.ga.best_fitness_history)
+        
+        self.ga.run(max_generations=remaining)
+        
+        # Собираем данные для пакетного обновления графика
+        max_possible = self.ga.max_possible_tree_weight
+        weight_data = []
+        for gen_idx in range(history_len_before, len(self.ga.best_fitness_history)):
+            weight = self.ga.best_fitness_history[gen_idx]
+            is_valid = weight < max_possible * 2
+            if is_valid:
+                weight_data.append((gen_idx, weight, True))
+                
+                if weight < self.best_mst_weight:
+                    self.best_mst_weight = weight
+                    self.log.insert("end", f"Найдено новое решение: Вес: {weight:.2f}, поколение: {gen_idx}\n")
+                    self.log.see("end")
+        
+        if weight_data:
+            self.stats.bulk_update_weights(weight_data)
+        
+        stats = self.ga.get_statistics()
+        if stats:
+            self.stats.update_stats(stats)
+        
+        # Обновляем комбобокс особей
+        self._populate_individual_selector()
+        
+        # Отрисовка графа МОД
+        best_solution = self.ga.get_best_solution()
+        current_mst = best_solution['edges']
+        
+        self.stats.weight_label.config(text=f"{best_solution["weight"]:.2f}")
+        
+        if self._is_valid_solution(best_solution):
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=current_mst,
+                reset_layout=False
+            )
         else:
-            final_edges = [(u, v) for u, v, w in all_edges[:num_vertices-1]] 
-            history_mst_edges = [final_edges] * 5
-
-        EvolutionWindow(
-            parent=self.root,
-            ga=self.ga,
-            max_count_generations=int(self.generations.get()),
-            show_stats_func=self.show_stats
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                reset_layout=False
+            )
+        
+        self.controls.enable_step_buttons(
+            can_back=self.ga.generation > 1,
+            can_skip=self.ga.generation < self.max_generations
         )
+        
+        self.log.insert("end", f"Пропуск к поколению {self.ga.generation}\n")
+        self.log.see("end")
+    
+    def toggle_play(self):
+        if not self.ga:
+            return
+        
+        if self.is_playing:
+            self.is_playing = False
+            self.controls.set_play_button_text(False)
+        else:
+            self.is_playing = True
+            self.controls.set_play_button_text(True)
+            self.play_loop()
+    
+    def play_loop(self):
+        if self.is_playing:
+            self.next_step()
+            self.root.after(500, self.play_loop)
+        else:
+            self.is_playing = False
+            self.controls.set_play_button_text(False)
+
+def main():
+    root = tk.Tk()
+    app = GA_GUI(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
