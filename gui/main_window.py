@@ -265,9 +265,14 @@ class GA_GUI:
         if not self.ga or self.ga.generation <= 1:
             return
         
+        old_generation = self.ga.generation
+        
         self.ga.rollback(steps=1)
+        
+        self.stats.truncate(self.ga.generation - 1)
+        
         self.update_plot()
-        self.log.insert("end", f"Откат к поколению {self.ga.generation}\n")
+        self.log.insert("end", f"Откат с поколения {old_generation} к поколению {self.ga.generation}\n")
         self.log.see("end")
     
     def skip_to_end(self):

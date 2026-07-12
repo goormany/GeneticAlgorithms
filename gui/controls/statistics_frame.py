@@ -108,6 +108,51 @@ class StatisticsFrame:
                 
                 self.fig.canvas.draw()
     
+    def truncate(self, generation):
+        """Обрезает данные графика до указанного поколения (включительно).
+        """
+        if generation < 0:
+            self.generations = []
+            self.weights = []
+        else:
+            cut_index = 0
+            for i, gen in enumerate(self.generations):
+                if gen <= generation:
+                    cut_index = i + 1
+                else:
+                    break
+            self.generations = self.generations[:cut_index]
+            self.weights = self.weights[:cut_index]
+        
+        self.best_line.set_data(self.generations, self.weights)
+        
+        self.scatter.remove()
+        current_best = float('inf')
+        best_points_x = []
+        best_points_y = []
+        for i, w in enumerate(self.weights):
+            if w < current_best:
+                current_best = w
+                best_points_x.append(self.generations[i])
+                best_points_y.append(w)
+        if best_points_x:
+            self.scatter = self.ax.scatter(best_points_x, best_points_y,
+                                        c='red', s=20, alpha=0.7, label='Найденные решения')
+        else:
+            self.scatter = self.ax.scatter([], [], c='red', s=20, alpha=0.7, label='Найденные решения')
+        
+        # Обновляем оси
+        if self.generations:
+            self.ax.set_xlim(0, max(self.generations) + 5)
+            min_weight = min(self.weights) - 5 if self.weights else 0
+            max_weight = max(self.weights) + 5 if self.weights else 100
+            self.ax.set_ylim(max(0, min_weight), max_weight)
+        else:
+            self.ax.set_xlim(0, 10)
+            self.ax.set_ylim(0, 100)
+        
+        self.fig.canvas.draw()
+
     def reset(self):
         """Сброс статистики и графика"""
         self.generation_label.config(text="-")
