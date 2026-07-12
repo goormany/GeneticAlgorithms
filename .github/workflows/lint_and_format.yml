@@ -1,0 +1,33 @@
+name: lint and format workflow
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths-ignore:
+      - "reports/**"
+      - ".github/**"
+  workflow_dispatch:
+    
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: pulling prj
+        uses: actions/checkout@v6.0.1
+
+      - name: view version python
+        run: python3 -V
+
+      - name: install ruff
+        run: pip3 install ruff
+      
+      - name: linter (ruff)
+        run: ruff check
+      
+      - name: formater checker (ruff)
+        run: ruff format --check
+      
+      - name: all done
+        run: echo "all done"
