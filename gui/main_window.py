@@ -463,12 +463,3 @@ class GA_GUI:
         else:
             self.is_playing = False
             self.controls.set_play_button_text(False)
-
-def main():
-    root = tk.Tk()
-    app = GA_GUI(root)
-    root.mainloop()
-
-
-if __name__ == "__main__":
-    main()

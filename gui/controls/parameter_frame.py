@@ -1,4 +1,3 @@
-import tkinter as tk
 from tkinter import ttk
 
 from utils.enums.crossover_types import CrossoverType

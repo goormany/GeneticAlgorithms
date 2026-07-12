@@ -1,5 +1,3 @@
-from typing import Any
-
 from models.schemas.ga_state import GAHistory, GAStateStep
 
 class HistoryManager:
@@ -66,10 +64,6 @@ class HistoryManager:
     def get_history_stats(self) -> GAHistory:
         """Получение статистики истории (для графиков)"""
         return self._history
-    
-    def get_navigation_info(self) -> dict[str, Any]:
-        """Получение информации о навигации"""
-        total = len(self._history)
     
     def get_last(self) -> GAStateStep | None:
         """Получение последнего шага"""

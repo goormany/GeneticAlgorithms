@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import BaseModel, Field, model_validator
 
 class GraphData(BaseModel):
     num_vercites: int = Field(gt=0, description="Кол-во вершин")

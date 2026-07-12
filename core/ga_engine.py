@@ -1,5 +1,4 @@
-import random
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict
 from models.graph import Graph
 from models.prufer import PruferCode
 from core.operators import GeneticOperators

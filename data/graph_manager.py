@@ -2,9 +2,7 @@ from pathlib import Path
 from typing import Any
 
 from models.graph import Graph
-from models.prufer import PruferCode
 from models.schemas.graph import GraphData
-from models.schemas.ga_state import GAHistory, GAStateStep
 from data.file_io import FileIO
 from data.graph_generator import GraphGenerator
 
