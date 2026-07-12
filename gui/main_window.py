@@ -383,9 +383,62 @@ class GA_GUI:
         self.is_playing = False
         self.controls.set_play_button_text(False)
         
-        remaining = self.max_generations - self.ga.generation
+        start_gen = self.ga.generation
+        remaining = self.max_generations - start_gen
+        
+        # Сохраняем текущую длину истории до запуска
+        history_len_before = len(self.ga.best_fitness_history)
+        
         self.ga.run(max_generations=remaining)
-        self.update_plot()
+        
+        # Добавляем все промежуточные лучшие веса на график статистики
+        max_possible = self.ga.max_possible_tree_weight
+        for gen_idx in range(history_len_before, len(self.ga.best_fitness_history)):
+            weight = self.ga.best_fitness_history[gen_idx]
+            
+            is_valid = weight < max_possible * 2
+            self.stats.update_weight(weight, gen_idx, is_valid)
+        
+        # Обновляем интерфейс: селектор особей, кнопки, граф — но без дублирования show_stats
+        self._populate_individual_selector()
+        
+        best_solution = self.ga.get_best_solution()
+        current_mst = best_solution['edges']
+        
+        # Обновляем текстовые метки статистики
+        stats = self.ga.get_statistics()
+        if stats:
+            self.stats.update_stats(stats)
+            if best_solution:
+                mst_weight = best_solution['weight']
+                generation = stats.get('generation', 0)
+                is_valid = self._is_valid_solution(best_solution)
+                
+                if is_valid and mst_weight < self.best_mst_weight:
+                    self.best_mst_weight = mst_weight
+                    self.log.insert("end", f"Найдено новое решение: Вес: {mst_weight}, поколение: {generation}\n")
+                    self.log.see("end")
+        
+        # Отрисовка графа
+        if self._is_valid_solution(best_solution):
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=current_mst,
+                reset_layout=False
+            )
+        else:
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                reset_layout=False
+            )
+        
+        self.controls.enable_step_buttons(
+            can_back=self.ga.generation > 1,
+            can_skip=self.ga.generation < self.max_generations
+        )
         
         self.log.insert("end", f"Пропуск к поколению {self.ga.generation}\n")
         self.log.see("end")
