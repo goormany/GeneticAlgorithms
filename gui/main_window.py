@@ -73,6 +73,25 @@ class GA_GUI:
         graph_frame = ttk.LabelFrame(left_panel, text="Граф и МОД")
         graph_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
+        # Панель выбора особи из популяции
+        selector_frame = ttk.Frame(graph_frame)
+        selector_frame.pack(fill="x", padx=5, pady=(5, 0))
+        
+        ttk.Label(selector_frame, text="Особь:").pack(side="left", padx=(0, 5))
+        self.individual_var = tk.StringVar()
+        self.individual_combo = ttk.Combobox(
+            selector_frame,
+            textvariable=self.individual_var,
+            state="readonly",
+            width=40
+        )
+        self.individual_combo.pack(side="left", fill="x", expand=True)
+        self.individual_combo.bind("<<ComboboxSelected>>", self._on_individual_selected)
+        self.individual_info_label = ttk.Label(selector_frame, text="")
+        self.individual_info_label.pack(side="left", padx=5)
+        # Храним список решений для быстрого доступа по индексу из combobox
+        self.individual_solutions = []
+        
         self.canvas = tk.Canvas(graph_frame, bg="white", height=500)
         self.canvas.pack(fill="both", expand=True)
         
@@ -150,9 +169,88 @@ class GA_GUI:
         self.stats.reset()  # Сбрасываем статистику и график
         self.controls.enable_controls(False)
         self.controls.set_play_button_text(False)
+        self._populate_individual_selector()
         
         if self.ga:
             self.ga = None
+    
+    def _populate_individual_selector(self):
+        """Заполняет комбобокс списком особей из текущей популяции"""
+        if not self.ga:
+            self.individual_combo.configure(values=[])
+            self.individual_combo.set("")
+            self.individual_info_label.configure(text="")
+            self.individual_solutions = []
+            return
+        
+        self.individual_solutions = self.ga.get_all_solutions()
+        
+        labels = []
+        for sol in self.individual_solutions:
+            weight_str = f"{sol['weight']:.2f}"
+            labels.append(f"#{sol['rank']} (вес: {weight_str}) | код: {'-'.join(map(str, sol['prufer_code']))}")
+        
+        self.individual_combo.configure(values=labels)
+        
+        # Сбросить выбор, если он вышел за пределы
+        if self.individual_var.get():
+            try:
+                idx = labels.index(self.individual_var.get())
+                self.individual_var.set(labels[idx])
+            except ValueError:
+                self.individual_var.set("")
+                self.individual_info_label.configure(text="")
+    
+    def _on_individual_selected(self, event=None):
+        """Обработчик выбора особи из комбобокса"""
+        selected_label = self.individual_var.get()
+        if not selected_label or not self.individual_solutions:
+            return
+        
+        try:
+            idx = self.individual_combo.cget("values").index(selected_label)
+            if 0 <= idx < len(self.individual_solutions):
+                sol = self.individual_solutions[idx]
+                self.individual_info_label.configure(
+                    text=f"вес: {sol['weight']:.2f}"
+                )
+                self._redraw_with_selected(sol['edges'])
+        except ValueError:
+            pass
+    
+    def _redraw_with_selected(self, selected_edges=None):
+        """Перерисовывает граф с учётом выбранной особи и лучшей МОД"""
+        if not self.ga or self.ga.generation == 0:
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                selected_edges=selected_edges,
+                reset_layout=False
+            )
+            return
+        
+        best_solution = self.ga.get_best_solution()
+        current_mst = best_solution['edges']
+        
+        self.show_stats()
+        
+        if self._is_valid_solution(best_solution):
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=current_mst,
+                selected_edges=selected_edges,
+                reset_layout=False
+            )
+        else:
+            self.drawer.draw(
+                vertices_count=self.graph_manager.get_graph().num_vertices,
+                edges_list=self.all_edges,
+                mst_edges=None,
+                selected_edges=selected_edges,
+                reset_layout=False
+            )
     
     def show_stats(self):
         if not self.ga:
@@ -188,6 +286,9 @@ class GA_GUI:
         return Graph.is_tree(num_vertices, solution['edges'], self.ga.graph)
     
     def update_plot(self):
+        # Обновляем список особей в селекторе
+        self._populate_individual_selector()
+        
         if not self.ga or self.ga.generation == 0:
             self.drawer.draw(
                 vertices_count=self.graph_manager.get_graph().num_vertices,

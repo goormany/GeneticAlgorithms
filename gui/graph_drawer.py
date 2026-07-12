@@ -23,6 +23,7 @@ class GraphDrawer:
         vertices_count: int,
         edges_list: list[tuple[int, int, float]],
         mst_edges: list[tuple[int, int]] = None,
+        selected_edges: list[tuple[int, int]] = None,
         reset_layout: bool = False
     ):
         self.ax.clear()
@@ -61,6 +62,15 @@ class GraphDrawer:
                 edgelist=current_mst_edges, edge_color='crimson', width=3.5
             )
 
+        # Если передан список ребер выбранной особи — выделяем их другим цветом
+        if selected_edges:
+            sel_set = set(tuple(sorted(e[:2])) for e in selected_edges)
+            current_sel_edges = [e for e in G.edges() if tuple(sorted(e)) in sel_set]
+            
+            nx.draw_networkx_edges(
+                G, self.pos, ax=self.ax,
+                edgelist=current_sel_edges, edge_color='#2ca02c', width=2.5, style='dashed'
+            )
 
         # Рисуем вершины
         nx.draw_networkx_nodes(G, self.pos, ax=self.ax, node_color='#1f77b4', node_size=400)
