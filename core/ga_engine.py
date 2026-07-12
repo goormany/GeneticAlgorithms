@@ -294,6 +294,24 @@ class GeneticAlgorithmMST:
 
         return solutions
 
+    def get_all_solutions(self) -> List[Dict]:
+        """Получить все особи из текущей популяции, отсортированные по fitness"""
+        evaluated = self._evaluate_population()
+        evaluated.sort(key=lambda x: x[1])
+
+        solutions = []
+        for i, (individual, fitness) in enumerate(evaluated):
+            edges = PruferCode.code_to_edges(self.graph.num_vertices, individual)
+            solutions.append({
+                'index': i,
+                'rank': i + 1,
+                'prufer_code': individual,
+                'edges': edges,
+                'weight': fitness
+            })
+
+        return solutions
+
     def get_statistics(self) -> Dict:
         """Получить статистику алгоритма"""
         return {
