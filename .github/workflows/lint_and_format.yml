@@ -4,6 +4,11 @@ on:
     branches:
       - main
       - dev
+    paths-ignore:
+      - "reports/**"
+      - ".github/**"
+  workflow_dispatch:
+    
 
 jobs:
   ci:
