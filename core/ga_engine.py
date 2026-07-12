@@ -8,15 +8,18 @@ from utils.enums.selection_types import SelectionType
 
 
 class GeneticAlgorithmMST:
-    def __init__(self, graph: Graph,
-                 population_size: int = 100,
-                 mutation_rate: float = 0.1,
-                 crossover_rate: float = 0.8,
-                 elitism_count: int = 2,
-                 selection_type: str = SelectionType.TOURNAMENT.value,
-                 crossover_type: str = CrossoverType.UNIFORM.value,
-                 mutation_type: str = MutationType.SWAP.value,
-                 tournament_size: int = 3):
+    def __init__(
+        self,
+        graph: Graph,
+        population_size: int = 100,
+        mutation_rate: float = 0.1,
+        crossover_rate: float = 0.8,
+        elitism_count: int = 2,
+        selection_type: str = SelectionType.TOURNAMENT.value,
+        crossover_type: str = CrossoverType.UNIFORM.value,
+        mutation_type: str = MutationType.SWAP.value,
+        tournament_size: int = 3,
+    ):
         """
         Args:
             graph: граф для поиска МОД
@@ -44,9 +47,7 @@ class GeneticAlgorithmMST:
         self.tournament_size = tournament_size
 
         self.operators = GeneticOperators(
-            graph.num_vertices,
-            mutation_rate,
-            crossover_rate
+            graph.num_vertices, mutation_rate, crossover_rate
         )
 
         self.population: List[List[int]] = []
@@ -123,18 +124,21 @@ class GeneticAlgorithmMST:
 
         return evaluated
 
-    def _select_parent(self, evaluated_population: List[Tuple[List[int], float]]) -> List[int]:
+    def _select_parent(
+        self, evaluated_population: List[Tuple[List[int], float]]
+    ) -> List[int]:
         if self.selection_type == SelectionType.TOURNAMENT.value:
             return self.operators.tournament_selection(
-                evaluated_population,
-                self.tournament_size
+                evaluated_population, self.tournament_size
             )
         elif self.selection_type == SelectionType.ROULETTE.value:
             return self.operators.roulette_selection(evaluated_population)
         else:
             raise ValueError(f"Неизвестный тип селекции: {self.selection_type}")
 
-    def _crossover(self, parent1: List[int], parent2: List[int]) -> Tuple[List[int], List[int]]:
+    def _crossover(
+        self, parent1: List[int], parent2: List[int]
+    ) -> Tuple[List[int], List[int]]:
         if self.crossover_type == CrossoverType.UNIFORM.value:
             return self.operators.uniform_crossover(parent1, parent2)
         elif self.crossover_type == CrossoverType.ONE_POINT.value:
@@ -155,11 +159,11 @@ class GeneticAlgorithmMST:
     def _save_state(self):
         """Сохранить текущее состояние в историю"""
         state = {
-            'generation': self.generation,
-            'population': [ind.copy() for ind in self.population],
-            'best_fitness_history': self.best_fitness_history.copy(),
-            'avg_fitness_history': self.avg_fitness_history.copy(),
-            'worst_fitness_history': self.worst_fitness_history.copy()
+            "generation": self.generation,
+            "population": [ind.copy() for ind in self.population],
+            "best_fitness_history": self.best_fitness_history.copy(),
+            "avg_fitness_history": self.avg_fitness_history.copy(),
+            "worst_fitness_history": self.worst_fitness_history.copy(),
         }
         self.history.append(state)
 
@@ -212,15 +216,17 @@ class GeneticAlgorithmMST:
         best_edges = PruferCode.code_to_edges(self.graph.num_vertices, best_individual)
 
         return {
-            'generation': self.generation,
-            'best_fitness': best_fitness,
-            'avg_fitness': avg_fitness,
-            'worst_fitness': worst_fitness,
-            'best_individual': best_individual,
-            'best_edges': best_edges
+            "generation": self.generation,
+            "best_fitness": best_fitness,
+            "avg_fitness": avg_fitness,
+            "worst_fitness": worst_fitness,
+            "best_individual": best_individual,
+            "best_edges": best_edges,
         }
 
-    def has_converged(self, patience: int = None, min_improvement: float = 0.001) -> bool:
+    def has_converged(
+        self, patience: int = None, min_improvement: float = 0.001
+    ) -> bool:
         """
         Проверить сошёлся ли алгоритм
 
@@ -271,10 +277,10 @@ class GeneticAlgorithmMST:
         best_edges = PruferCode.code_to_edges(self.graph.num_vertices, best_individual)
 
         return {
-            'prufer_code': best_individual,
-            'edges': best_edges,
-            'weight': best_fitness,
-            'generation': self.generation
+            "prufer_code": best_individual,
+            "edges": best_edges,
+            "weight": best_fitness,
+            "generation": self.generation,
         }
 
     def get_population_solutions(self, top_k: int = 10) -> List[Dict]:
@@ -285,11 +291,9 @@ class GeneticAlgorithmMST:
         solutions = []
         for individual, fitness in evaluated[:top_k]:
             edges = PruferCode.code_to_edges(self.graph.num_vertices, individual)
-            solutions.append({
-                'prufer_code': individual,
-                'edges': edges,
-                'weight': fitness
-            })
+            solutions.append(
+                {"prufer_code": individual, "edges": edges, "weight": fitness}
+            )
 
         return solutions
 
@@ -301,23 +305,25 @@ class GeneticAlgorithmMST:
         solutions = []
         for i, (individual, fitness) in enumerate(evaluated):
             edges = PruferCode.code_to_edges(self.graph.num_vertices, individual)
-            solutions.append({
-                'index': i,
-                'rank': i + 1,
-                'prufer_code': individual,
-                'edges': edges,
-                'weight': fitness
-            })
+            solutions.append(
+                {
+                    "index": i,
+                    "rank": i + 1,
+                    "prufer_code": individual,
+                    "edges": edges,
+                    "weight": fitness,
+                }
+            )
 
         return solutions
 
     def get_statistics(self) -> Dict:
         """Получить статистику алгоритма"""
         return {
-            'generation': self.generation,
-            'best_fitness_history': self.best_fitness_history.copy(),
-            'avg_fitness_history': self.avg_fitness_history.copy(),
-            'worst_fitness_history': self.worst_fitness_history.copy()
+            "generation": self.generation,
+            "best_fitness_history": self.best_fitness_history.copy(),
+            "avg_fitness_history": self.avg_fitness_history.copy(),
+            "worst_fitness_history": self.worst_fitness_history.copy(),
         }
 
     def rollback(self, steps: int = 1) -> bool:
@@ -328,13 +334,13 @@ class GeneticAlgorithmMST:
         target_index = max(0, len(self.history) - steps - 1)
 
         state = self.history[target_index]
-        self.generation = state['generation']
-        self.population = [ind.copy() for ind in state['population']]
-        self.best_fitness_history = state['best_fitness_history'].copy()
-        self.avg_fitness_history = state['avg_fitness_history'].copy()
-        self.worst_fitness_history = state['worst_fitness_history'].copy()
+        self.generation = state["generation"]
+        self.population = [ind.copy() for ind in state["population"]]
+        self.best_fitness_history = state["best_fitness_history"].copy()
+        self.avg_fitness_history = state["avg_fitness_history"].copy()
+        self.worst_fitness_history = state["worst_fitness_history"].copy()
 
-        self.history = self.history[:target_index + 1]
+        self.history = self.history[: target_index + 1]
 
         return True
 
