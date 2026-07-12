@@ -4,9 +4,6 @@ from typing import Any
 from models.schemas.graph import GraphData
 
 
-
-
-
 class Graph:
     def __init__(self, num_vertices: int):
         if num_vertices <= 0:
