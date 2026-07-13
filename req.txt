@@ -12,6 +12,7 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
+ruff==0.15.21
 six==1.17.0
 typing-inspection==0.4.2
 typing_extensions==4.16.0

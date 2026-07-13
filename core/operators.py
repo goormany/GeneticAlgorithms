@@ -1,9 +1,11 @@
 import random
 from typing import List, Tuple
 
+
 class GeneticOperators:
-    def __init__(self, num_vertices: int, mutation_rate: float = 0.1,
-                 crossover_rate: float = 0.8):
+    def __init__(
+        self, num_vertices: int, mutation_rate: float = 0.1, crossover_rate: float = 0.8
+    ):
         """
         Args:
             num_vertices: количество вершин в графе
@@ -24,8 +26,9 @@ class GeneticOperators:
 
         return [random.randint(1, self.num_vertices) for _ in range(code_length)]
 
-    def tournament_selection(self, population: List[Tuple[List[int], float]],
-                             tournament_size: int = 3) -> List[int]:
+    def tournament_selection(
+        self, population: List[Tuple[List[int], float]], tournament_size: int = 3
+    ) -> List[int]:
         """
         Турнирная селекция
         """
@@ -33,7 +36,9 @@ class GeneticOperators:
         winner = min(tournament, key=lambda x: x[1])
         return winner[0].copy()
 
-    def roulette_selection(self, population: List[Tuple[List[int], float]]) -> List[int]:
+    def roulette_selection(
+        self, population: List[Tuple[List[int], float]]
+    ) -> List[int]:
         """
         Рулеточная селекция (с инверсией для минимизации)
         """
@@ -55,7 +60,9 @@ class GeneticOperators:
         # На случай ошибок округления
         return population[-1][0].copy()
 
-    def uniform_crossover(self, parent1: List[int], parent2: List[int]) -> Tuple[List[int], List[int]]:
+    def uniform_crossover(
+        self, parent1: List[int], parent2: List[int]
+    ) -> Tuple[List[int], List[int]]:
         """
         Равномерное скрещивание
         """
@@ -79,7 +86,9 @@ class GeneticOperators:
 
         return child1, child2
 
-    def one_point_crossover(self, parent1: List[int], parent2: List[int]) -> Tuple[List[int], List[int]]:
+    def one_point_crossover(
+        self, parent1: List[int], parent2: List[int]
+    ) -> Tuple[List[int], List[int]]:
         """
         Одноточечное скрещивание
         """
@@ -97,7 +106,9 @@ class GeneticOperators:
 
         return child1, child2
 
-    def two_point_crossover(self, parent1: List[int], parent2: List[int]) -> Tuple[List[int], List[int]]:
+    def two_point_crossover(
+        self, parent1: List[int], parent2: List[int]
+    ) -> Tuple[List[int], List[int]]:
         """
         Двухточечное скрещивание
         """
