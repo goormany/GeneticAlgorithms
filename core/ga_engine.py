@@ -66,8 +66,6 @@ class GeneticAlgorithmMST:
         max_edge_weight = max((w for _, _, w in self.graph.get_edges()))
         self.max_possible_tree_weight = max_edge_weight * (self.graph.num_vertices - 1)
 
-        self.default_patience = max(30, min(150, int(self.population_size * 0.3)))
-
         self._initialize_population()
 
     def _initialize_population(self):
@@ -224,47 +222,12 @@ class GeneticAlgorithmMST:
             "best_edges": best_edges,
         }
 
-    def has_converged(
-        self, patience: int = None, min_improvement: float = 0.001
-    ) -> bool:
-        """
-        Проверить сошёлся ли алгоритм
-
-        Args:
-            patience: сколько поколений без улучшения (None = автоматический выбор)
-            min_improvement: минимальное относительное улучшение
-
-        Returns:
-            True если алгоритм сошёлся
-        """
-        # Если patience не указан, используем адаптивное значение
-        if patience is None:
-            patience = self.default_patience
-
-        if self.generation < patience:
-            return False
-
-        recent = self.best_fitness_history[-patience:]
-
-        best_recent = min(recent)
-        worst_recent = max(recent)
-
-        if best_recent == worst_recent:
-            return True
-
-        improvement = (worst_recent - best_recent) / worst_recent
-        return improvement < min_improvement
-
     def run(self, max_generations: int) -> Dict:
         """
         Запустить алгоритм на заданное количество поколений
         """
         for i in range(max_generations):
             stats = self.step()
-
-            # if self.has_converged():
-            #     print(f"Сходимость достигнута на поколении {i + 1}")
-            #     break
 
         return stats
 
